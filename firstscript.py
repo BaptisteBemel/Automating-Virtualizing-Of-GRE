@@ -142,7 +142,6 @@ def main():
         #Unable to connect to the router
         print('The connection to the router is impossible.')
         return False
-        #testcommit
 
 if __name__ == '__main__':
     main()
