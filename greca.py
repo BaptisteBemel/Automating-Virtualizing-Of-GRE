@@ -7,6 +7,7 @@ def main():
     while True:
         again = False
 
+
         #Ask for the public IP of the 1st router
         firstPublicIPMask = input("Enter the public IP/mask of the first router: ")
         firstPublicIP = firstPublicIPMask.split('/')[0]
@@ -14,15 +15,23 @@ def main():
         #Validate the format of the public IP of the 1st router
         again = validate_IP(firstPublicIPMask)
 
+
         #Ping the first router
         print('Pinging...')
         again = ping(firstPublicIP)
+
+
+        #Ask for the OS of the 1st router
+        firstOS = input("Enter the OS of the first router ('1': CSR, '2': VyOS, '3': Mikrotik): ")
+
+        #Validate the format of the public IP of the 1st router
+        again = validate_OS(firstOS)
+
 
         if not again:
             break
 
 
-        #Find the OS of the 1st router
 
 
         #Ask for the public IP of the 1st router
@@ -95,7 +104,11 @@ def validate_IP(ipMask):
         return True
 
     #There must be only one part to the mask
-    if len(maskTest) == 0 or not (int(maskTest) >= 1 and int(maskTest) <= 32):
+    try:
+        if len(maskTest) == 0 or not (int(maskTest) >= 1 and int(maskTest) <= 32):
+            print('The mask has been written incorrectly. Ex: 197.164.73.5/24')
+            return True
+    except ValueError:
         print('The mask has been written incorrectly. Ex: 197.164.73.5/24')
         return True
 
@@ -129,6 +142,17 @@ def ping(host):
         return False
     except subprocess.CalledProcessError:
         print('The first router cannot be ping.')
+        return True
+
+def validate_OS(osInput):
+    try:
+        if not (int(osInput) >= 1 and int(osInput) <= 3):
+            print('The OS number has been written incorrectly. Please type 1 (CSR), 2 (VyOS) or 3 (Mikrotik)')
+            return True
+        
+        return False
+    except ValueError:
+        print('The OS number has been written incorrectly. Please type 1 (CSR), 2 (VyOS) or 3 (Mikrotik)')
         return True
 
 
