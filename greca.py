@@ -7,14 +7,11 @@ import subprocess
 
 
 def main():
-    #Input for the 1st router
+    #Public IP of the 1st router
     while True:
         again = False
 
-
-        #Ask for the public IP of the 1st router
         firstPublicIPMask = input("Enter the public IP/mask of the first router: ")
-        firstPublicIP = firstPublicIPMask.split('/')[0]
 
         #Validate the format of the public IP of the 1st router
         again = validate_IP(firstPublicIPMask)
@@ -29,10 +26,10 @@ def main():
             break
 
 
+    #OS of the 1st router
     while True:
         again = False
                 
-        #Ask for the OS of the 1st router
         firstOS = input("Enter the OS of the first router ('1': CSR, '2': VyOS, '3': Mikrotik): ")
 
         #Validate the format of the public IP of the 1st router
@@ -42,14 +39,13 @@ def main():
         if not again:
             break
 
-    #Input for the second router
+    #Public IP of the 2nd router
     while True:
         again = False
 
 
         #Ask for the public IP of the 2nd router
         secondPublicIPMask = input("Enter the public IP/mask of the second router: ")
-        secondPublicIP = secondPublicIPMask.split('/')[0]
 
         #Validate the format of the public IP of the 1st router
         again = validate_IP(secondPublicIPMask)
@@ -65,10 +61,10 @@ def main():
             break
 
 
+    #OS of the 2nd router
     while True:
         again = False
                 
-        #Ask for the OS of the 2nd router
         secondOS = input("Enter the OS of the second router ('1': CSR, '2': VyOS, '3': Mikrotik): ")
 
         #Validate the format of the public IP of the 1st router
@@ -81,11 +77,6 @@ def main():
 
     #Adding routes
     for turn in range(4):
-        if again:
-            turn -= 1
-
-        again = False
-
 
         if turn == 0:
             routerSelector = "1st"
@@ -98,11 +89,16 @@ def main():
         elif turn == 3:
             gatewaySelector = "Back-up" 
 
-        gateway = input(gatewaySelector + " gateway of the " + routerSelector + " router : ")
 
+        while True:
+            again = False
+                
+            gateway = input(gatewaySelector + " gateway of the " + routerSelector + " router : ")
 
+            again = validate_IP(gateway)
 
-        again = validate_IP(gateway)
+            if not again:
+                break
         
         
         if not again and routerSelector == "1st" and gatewaySelector == "Main":
@@ -116,18 +112,14 @@ def main():
 
         elif not again and routerSelector == "2nd" and gatewaySelector == "Back-up":
             add_route(firstPublicIPMask, secondOS, gateway, '5')
-        
-
-        if not again and routerSelector == "2nd" and gatewaySelector == "Back-up":
-            break
-
-
 
 
 
       
-    #Ask for the tunnel name - Should I ? : still ask it + default one if name is empty
-    tunnel = input("Enter the name of the tunnel : ")
+    #Ask for the tunnel name - Should I ? : still ask it + default one if name is empty - SQLi like injection ? Only risk is if you can include a return value in the string
+    tunnel = input("Enter the name of the tunnel (default name: [insert generated tunnel name]): ")
+
+
 
 
 #documentation
