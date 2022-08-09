@@ -19,10 +19,9 @@ def main():
         #Validate the format of the public IP of the 1st router
         again = validate_IP(firstPublicIPMask)
 
-
-        """#Ping the first router
+        """
+        #Ping the first router
         if not again:
-            print('Pinging...')
             again = ping(firstPublicIP)"""
 
 
@@ -120,6 +119,11 @@ def main():
             break
 
 
+      
+    #Ask for the tunnel name - Should I ? : still ask it + default one if name is empty
+    tunnel = input("Enter the name of the tunnel : ")
+
+
 #documentation
 def validate_IP(ipMask):
 
@@ -206,23 +210,6 @@ def validate_OS(osInput):
 #add documentation
 def add_route(targetIPMask, firstOS, nextHop):
 
-    #CSR
-    if firstOS == '1':
-        cisco_route(targetIPMask, nextHop)
-
-
-    #VyOS
-    elif firstOS == '2':
-        pass
-
-
-    #Mikrotik
-    elif firstOS == '3':
-        pass
-
-
-def cisco_route(targetIPMask, nextHop):
-
     #Translation from /subnet_mask to a classic subnet mask
     traduction_subnet_mask = {
         '1': '128.0.0.0',
@@ -269,10 +256,24 @@ def cisco_route(targetIPMask, nextHop):
     juncture = '/'
     targetNetworkMask = juncture.join(listNetworkMask)
 
+    #CSR
+    if firstOS == '1':
+        new_route = 'ip route ' + targetNetworkMask + ' ' + nextHop
 
-    #Write and print the static route
-    new_route = 'ip route ' + targetNetworkMask + ' ' + nextHop
-    print(new_route) #enleverleprint
+    #VyOS
+    elif firstOS == '2':
+        pass
+
+
+    #Mikrotik
+    elif firstOS == '3':
+        pass
+
+
+
+
+
+
     """
     #List of commands to run on the routeur
     commands = ['enable', 'configure terminal', new_route]
@@ -292,20 +293,6 @@ def cisco_route(targetIPMask, nextHop):
         print('The connection to the router is impossible.')
         return False
         """
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
