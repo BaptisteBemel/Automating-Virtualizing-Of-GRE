@@ -80,43 +80,49 @@ def main():
 
 
     #Adding routes
-    while True:
+    for turn in range(4):
+        if again:
+            turn -= 1
+
         again = False
-                
 
-        selector = input("Add a new route ? (yes/no) : ")
 
-        if selector == "yes":
-            again = True
+        if turn == 0:
+            routerSelector = "1st"
+            gatewaySelector = "Main"
+        elif turn == 1:
+            gatewaySelector = "Back-up"
+        elif turn == 2:
+            routerSelector = "2nd"
+            gatewaySelector = "Main"
+        elif turn == 3:
+            gatewaySelector = "Back-up" 
 
-            while True:
-                routerSelectorAgain = False
+        gateway = input(gatewaySelector + " gateway of the " + routerSelector + " router : ")
 
-                routerSelector = input("On which router ? (1/2) : ")
 
-                if routerSelector == "1":
-                    routerSelectorAgain = False
-                    add_route(secondPublicIPMask, firstOS, firstPublicIP) #3rd parameter has to be gateway and not 1stpubip
-                
-                elif routerSelector == "2":
-                    routerSelectorAgain = False
 
-                else:
-                    print("Wrong spelling. Try again.")
-                    routerSelectorAgain = True
+        again = validate_IP(gateway)
+        
+        
+        if not again and routerSelector == "1st" and gatewaySelector == "Main":
+            add_route(secondPublicIPMask, firstOS, gateway)
+        
+        elif not again and routerSelector == "1st" and gatewaySelector == "Back-up":
+            add_route(secondPublicIPMask, firstOS, gateway, '5')
 
-                if not routerSelectorAgain:
-                    break
+        elif not again and routerSelector == "2nd" and gatewaySelector == "Main":
+            add_route(firstPublicIPMask, secondOS, gateway)
 
-        elif selector =="no":
-            again = False
+        elif not again and routerSelector == "2nd" and gatewaySelector == "Back-up":
+            add_route(firstPublicIPMask, secondOS, gateway, '5')
+        
 
-        else:
-            print("Wrong spelling. Try again.")
-            again = True
-
-        if not again:
+        if not again and routerSelector == "2nd" and gatewaySelector == "Back-up":
             break
+
+
+
 
 
       
@@ -208,7 +214,7 @@ def validate_OS(osInput):
         return True
 
 #add documentation
-def add_route(targetIPMask, firstOS, nextHop):
+def add_route(targetIPMask, firstOS, nextHop, distance='1'):
 
     #Translation from /subnet_mask to a classic subnet mask
     traduction_subnet_mask = {
@@ -248,6 +254,7 @@ def add_route(targetIPMask, firstOS, nextHop):
 
     #Get the network address of the customer
     targetIPSplit = targetIPMask.split('/')[0].split('.')
+    targetMask = traduction_subnet_mask[targetIPMask.split('/')[1]]
     targetNetwork = targetIPSplit[0:3]
     targetNetwork.append('0')
     juncture = '.'
@@ -258,16 +265,18 @@ def add_route(targetIPMask, firstOS, nextHop):
 
     #CSR
     if firstOS == '1':
-        new_route = 'ip route ' + targetNetworkMask + ' ' + nextHop
+        new_route = 'ip route ' + targetNetwork + ' ' + targetMask + ' ' + nextHop + ' ' + distance
 
     #VyOS
     elif firstOS == '2':
-        pass
+        new_route = 'set protocols static route ' + targetNetworkMask + ' next-hop ' + nextHop + ' distance \'' + distance + '\''
 
 
     #Mikrotik
     elif firstOS == '3':
-        pass
+        new_route = 'ip route add dst-address=' + targetNetworkMask + ' gateway=' + nextHop + ' distance=' + distance
+
+    print(new_route)
 
 
 
