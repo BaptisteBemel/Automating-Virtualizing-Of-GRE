@@ -1,79 +1,57 @@
 # Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL - made in August 2022
 from msilib.schema import Error
-from re import A
+from re import A, S
 from urllib import response
 import netmiko
 import subprocess
 
 
 def main():
-    #Public IP of the 1st router
-    while True:
-        again = False
 
-        firstPublicIPMask = input("Enter the public IP/mask of the first router: ")
+    summary = ""
+    
+    for turn in range(2):
+        #Public IP of the routers
+        while True:
+            again = False
 
-        #Validate the format of the public IP of the 1st router
-        again = validate_IP(firstPublicIPMask)
+            publicIPMask = input("Enter the public IP/mask of the first router: ")
 
-        """
-        #Ping the first router
-        if not again:
-            again = ping(firstPublicIP)"""
+            #Validate the format of the public IP
+            again = validate_IP(publicIPMask)
 
-
-        if not again:
-            break
-
-
-    #OS of the 1st router
-    while True:
-        again = False
-                
-        firstOS = input("Enter the OS of the first router ('1': CSR, '2': VyOS, '3': Mikrotik): ")
-
-        #Validate the format of the public IP of the 1st router
-        again = validate_OS(firstOS)
+            """
+            #Ping the first router
+            if not again:
+                again = ping(publicIP)"""
 
 
-        if not again:
-            break
-
-    #Public IP of the 2nd router
-    while True:
-        again = False
+            if not again:
+                break
 
 
-        #Ask for the public IP of the 2nd router
-        secondPublicIPMask = input("Enter the public IP/mask of the second router: ")
+        #OS of the routers
+        while True:
+            again = False
+                    
+            OS = input("Enter the OS of the first router ('1': CSR, '2': VyOS, '3': Mikrotik): ")
 
-        #Validate the format of the public IP of the 1st router
-        again = validate_IP(secondPublicIPMask)
-
-
-        """#Ping the first router
-        if not again:
-            print('Pinging...')
-            again = ping(secondPublicIP)"""
+            #Validate the format of the public IP
+            again = validate_OS(OS)
 
 
-        if not again:
-            break
+            if not again:
+                break
 
+        if turn == 0:
+            firstPublicIPMask = publicIPMask
+            firstOS = OS
 
-    #OS of the 2nd router
-    while True:
-        again = False
-                
-        secondOS = input("Enter the OS of the second router ('1': CSR, '2': VyOS, '3': Mikrotik): ")
+        elif turn == 1:
+            secondPublicIPMask = publicIPMask
+            secondOS = OS
 
-        #Validate the format of the public IP of the 1st router
-        again = validate_OS(secondOS)
-
-
-        if not again:
-            break
-
+    
 
     #Adding routes
     for turn in range(4):
@@ -114,10 +92,72 @@ def main():
             add_route(firstPublicIPMask, secondOS, gateway, '5')
 
 
+    
+    for turn in range(4):
 
-      
-    #Ask for the tunnel name - Should I ? : still ask it + default one if name is empty - SQLi like injection ? Only risk is if you can include a return value in the string
-    tunnel = input("Enter the name of the tunnel (default name: [insert generated tunnel name]): ")
+        if turn == 0:
+            routerSelector = "1st"
+            tunnelSelector = "main"
+        elif turn == 1:
+            tunnelSelector = "back-up"
+        elif turn == 2:
+            routerSelector = "2nd"
+            tunnelSelector = "main"
+        elif turn == 3:
+            tunnelSelector = "back-up" 
+
+        if turn == 0 or turn == 2:
+            #Name of the GRE tunnel
+            tunnel = input("Enter the name of the " + tunnelSelector + " tunnel (default name: [insert generated tunnel name]): ")
+
+            while True:
+                keepAliveTimeOut = input("Enter the number of seconds for the keep-alive for the " + tunnelSelector + " tunnel (default time: 5(seconds)): ")
+                again = validate_positive_integer(keepAliveRetries)
+                if not again:
+                    break
+
+            while True: 
+                keepAliveRetries = input("Enter the number of retries for the " + tunnelSelector + " tunnel (default number: 4): ")
+                again = validate_positive_integer(keepAliveRetries)
+                if not again:
+                    break
+
+        while True:
+            again = False
+
+            privateIPMask = input("Enter the private IP/mask of the " + routerSelector + " router for the " + tunnelSelector + " tunnel: ")
+
+            #Validate the format of the private
+            again = validate_IP(privateIPMask)
+
+            if not again:
+                if privateIPMask.split('/')[1] == "30":
+                    break
+                else:
+                    print("The subnet mask for a tunnel has to be /30.")
+
+        if turn == 0:
+            tunnel1 = tunnel
+            keepAliveTimeOut1 = keepAliveTimeOut
+            keepAliveRetries1 = keepAliveRetries
+            firstMainIPMask = privateIPMask
+
+        elif turn == 1:
+            secondMainIPMask = privateIPMask
+        
+        elif turn == 2:
+            tunnel2 = tunnel
+            keepAliveTimeOut2 = keepAliveTimeOut
+            keepAliveRetries2 = keepAliveRetries
+            firstBackupIPMask = privateIPMask
+        
+        elif turn == 3:
+            secondBackupIPMask = privateIPMask
+
+    
+    print(summary)
+
+
 
 
 
@@ -268,32 +308,38 @@ def add_route(targetIPMask, firstOS, nextHop, distance='1'):
     elif firstOS == '3':
         new_route = 'ip route add dst-address=' + targetNetworkMask + ' gateway=' + nextHop + ' distance=' + distance
 
-    print(new_route)
 
-
-
-
-
-
-    """
-    #List of commands to run on the routeur
-    commands = ['enable', 'configure terminal', new_route]
-
-    #Try to connect to the router
+def validate_positive_integer(stringNumber):
     try:
-        #Opening of the connection
-        connection = netmiko.ConnectHandler(ip=customer_default_gateway_ip_address, device_type="cisco_ios", username="", password="")
+        if not int(stringNumber) >= 0:
+                print('The input has to be a positive integer')
+                return True
 
-        #The commands are being executed and the messages are printed
-        print(connection.send_config_set(commands))
+    except ValueError:
+        print("The input is not an integer. Try again.")
+        return True
 
-        #Closing of the connection
-        connection.disconnect()
-    except:
-        #Unable to connect to the router
-        print('The connection to the router is impossible.')
-        return False
-        """
+
+
+"""
+#List of commands to run on the routeur
+commands = ['enable', 'configure terminal', new_route]
+
+#Try to connect to the router
+try:
+    #Opening of the connection
+    connection = netmiko.ConnectHandler(ip=customer_default_gateway_ip_address, device_type="cisco_ios", username="", password="")
+
+    #The commands are being executed and the messages are printed
+    print(connection.send_config_set(commands))
+
+    #Closing of the connection
+    connection.disconnect()
+except:
+    #Unable to connect to the router
+    print('The connection to the router is impossible.')
+    return False
+    """
 
 
 if __name__ == '__main__':
