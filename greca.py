@@ -12,13 +12,13 @@ def main():
     for turn in range(4):
         #Public IP of the routers
         if turn == 0:
-            print('Informations about the main local router')
+            print('Informations about the main left router')
         elif turn == 1:
-            print('Informations about the main remote router')
+            print('Informations about the main right router')
         elif turn == 2:
-            print('Informations about the back-up local router')
+            print('Informations about the back-up left router')
         elif turn == 3:
-            print('Informations about the back-up remote router')
+            print('Informations about the back-up right router')
 
         while True:
             again = False
@@ -52,20 +52,20 @@ def main():
                 break
 
         if turn == 0:
-            mainLocalPublicIPMask = publicIPMask
-            mainLocalOS = OS
+            mainLeftPublicIPMask = publicIPMask
+            mainLeftOS = OS
 
         elif turn == 1:
-            mainRemotePublicIPMask = publicIPMask
-            mainRemoteOS = OS
+            mainRightPublicIPMask = publicIPMask
+            mainRightOS = OS
 
         elif turn == 2:
-            backupLocalPublicIPMask = publicIPMask
-            backupLocalOS = OS
+            backupLeftPublicIPMask = publicIPMask
+            backupLeftOS = OS
 
         elif turn == 3:
-            backupRemotePublicIPMask = publicIPMask
-            backupRemoteOS = OS
+            backupRightPublicIPMask = publicIPMask
+            backupRightOS = OS
 
     
 
@@ -73,35 +73,35 @@ def main():
     for turn in range(8):
 
         if turn == 0:
-            routerSelector = "local main"
-            nextHopSelector = "Main next-hop"
+            routerSelector = "main Left"
+            nextHopSelector = "main route"
         elif turn == 1:
-            routerSelector = "local main"
-            nextHopSelector = "Back-up next-hop"
+            routerSelector = "main Left"
+            nextHopSelector = "back-up route"
         elif turn == 2:
-            routerSelector = "remote main"
-            nextHopSelector = "Main next-hop"
+            routerSelector = "main right"
+            nextHopSelector = "main route"
         elif turn == 3:
-            routerSelector = "remote main"
-            nextHopSelector = "Back-up" 
+            routerSelector = "main right"
+            nextHopSelector = "back-up route" 
         elif turn == 4:
-            routerSelector = "local back-up"
-            nextHopSelector = "Main route"
-        elif turn == 1:
-            routerSelector = "local back-up"
-            nextHopSelector = "Back-up route"
-        elif turn == 2:
-            routerSelector = "remote back-up"
-            nextHopSelector = "Main route"
-        elif turn == 3:
-            routerSelector = "remote back-up"
-            nextHopSelector = "Back-up route" 
+            routerSelector = "back-up left"
+            nextHopSelector = "main route"
+        elif turn == 5:
+            routerSelector = "back-up left"
+            nextHopSelector = "back-up route"
+        elif turn == 6:
+            routerSelector = "back-up right"
+            nextHopSelector = "main route"
+        elif turn == 7:
+            routerSelector = "back-up right"
+            nextHopSelector = "back-up route" 
 
 
         while True:
             again = False
                 
-            nextHop = input(nextHopSelector + " gateway of the " + routerSelector + " router : ")
+            nextHop = input("Next hop for the " + nextHopSelector + " of the " + routerSelector + " router : ")
 
             again = validate_IP(nextHop)
 
@@ -109,101 +109,148 @@ def main():
                 break
         
         
-        if not again and routerSelector == "1st" and gatewaySelector == "Main":
-            firstMainRoute = add_route(mainRemotePublicIPMask, firstOS, nextHop)
+        if not again and turn == 0:
+            mainLeftRouterMainRoute = add_route(mainRightPublicIPMask, mainLeftOS, nextHop)
         
-        elif not again and routerSelector == "1st" and gatewaySelector == "Back-up":
-            firstBackupRoute = add_route(mainRemotePublicIPMask, firstOS, nextHop, '5')
+        elif not again and turn == 1:
+            mainLeftRouterBackupRoute = add_route(backupRightPublicIPMask, backupLeftOS, nextHop, '5')
 
-        elif not again and routerSelector == "2nd" and gatewaySelector == "Main":
-            secondMainRoute = add_route(mainLocalPublicIPMask, secondOS, nextHop)
+        elif not again and turn == 2:
+            mainRightRouterMainRoute = add_route(mainLeftPublicIPMask, mainRightOS, nextHop)
 
-        elif not again and routerSelector == "2nd" and gatewaySelector == "Back-up":
-            secondBackupRoute = add_route(mainLocalPublicIPMask, secondOS, nextHop, '5')
+        elif not again and turn == 3:
+            mainRightRouterBackupRoute = add_route(backupLeftPublicIPMask, backupRightOS, nextHop, '5')
+        
+        elif not again and turn == 4:
+            backupLeftRouterMainRoute = add_route(mainRightPublicIPMask, mainLeftOS, nextHop)
+        
+        elif not again and turn == 5:
+            backupLeftRouterBackupRoute = add_route(backupRightPublicIPMask, backupLeftOS, nextHop, '5')
+
+        elif not again and turn == 6:
+            backupRightRouterMainRoute = add_route(mainLeftPublicIPMask, mainRightOS, nextHop)
+
+        elif not again and turn == 7:
+            backupRightRouterBackupRoute = add_route(backupLeftPublicIPMask, backupRightOS, nextHop, '5')
 
 
-    #Tunnels
+    #Tunnels, private IPs, keep-alive
     for turn in range(4):
 
         if turn == 0:
-            routerSelector = "1st"
             tunnelSelector = "main"
+            routerSelector = "main left router"
         elif turn == 1:
             tunnelSelector = "back-up"
         elif turn == 2:
-            routerSelector = "2nd"
             tunnelSelector = "main"
+            routerSelector = "back-up left router"
         elif turn == 3:
-            tunnelSelector = "back-up" 
+            tunnelSelector = "back-up"
 
-        if turn == 0 or turn == 2:
-            #Name of the GRE tunnel
-            tunnel = input("Enter the name of the " + tunnelSelector + " tunnel (default name: [insert generated tunnel name]): ")
 
-            while True:
-                keepAliveTimeOut = input("Enter the number of seconds for the keep-alive for the " + tunnelSelector + " tunnel (default time: 5(seconds)): ")
-                again = validate_positive_integer(keepAliveRetries)
-                if not again:
-                    break
+        #Name of the GRE tunnel
+        tunnel = input("Enter the name of the " + tunnelSelector + " tunnel for the " + routerSelector + "(default name: [insert generated tunnel name]): ")
 
-            while True: 
-                keepAliveRetries = input("Enter the number of retries for the " + tunnelSelector + " tunnel (default number: 4): ")
-                again = validate_positive_integer(keepAliveRetries)
-                if not again:
-                    break
+        while True:
+            keepAliveTimeOut = input("Enter the number of seconds for the keep-alive for this tunnel (default time: 5(seconds)): ")
+            again = validate_positive_integer(keepAliveRetries)
+            if not again:
+                break
+
+        while True: 
+            keepAliveRetries = input("Enter the number of retries for this tunnel (default number: 4): ")
+            again = validate_positive_integer(keepAliveRetries)
+            if not again:
+                break
 
 
         #Private IPs
-        while True:
-            again = False
+        privateIPs = []
+        for routerTurn in range(4):
+            if turn == 0:
+                if routerTurn == 0:
+                    routerSelector = "mainLeftRouterMainIP"
+                elif routerTurn == 1:
+                    routerSelector = "mainLeftRouterBackupIP"
+                elif routerTurn == 2:
+                    routerSelector = "mainRightRouterMainIP"
+                elif routerTurn == 3:
+                    routerSelector = "backupRightRouterMainIP"
+            elif turn == 1:
+                if routerTurn == 0:
+                    routerSelector = "backupLeftRouterMainIP"
+                elif routerTurn == 1:
+                    routerSelector = "backupLeftRouterBackupIP"
+                elif routerTurn == 2:
+                    routerSelector = "mainRightRouterBackupIP"
+                elif routerTurn == 3:
+                    routerSelector = "backupRightRouterBackupIP"
 
-            privateIPMask = input("Enter the private IP/mask of the " + routerSelector + " router for the " + tunnelSelector + " tunnel: ")
+            while True:
+                again = False
 
-            #Validate the format of the private
-            again = validate_IP(privateIPMask)
+                privateIPMask = input("Enter the private IP/mask of the " + routerSelector + " router for the " + tunnelSelector + " tunnel: ")
 
-            if not again:
-                if privateIPMask.split('/')[1] == "30":
-                    break
-                else:
-                    print("The subnet mask for a tunnel has to be /30.")
+                #Validate the format of the private
+                again = validate_IP(privateIPMask)
+
+                if not again:
+                    if privateIPMask.split('/')[1] == "30":
+                        break
+                    else:
+                        print("The subnet mask for a tunnel has to be /30.")
+
+            privateIPs.append(privateIPMask)
 
 
         if turn == 0:
             tunnel1 = tunnel
             keepAliveTimeOut1 = keepAliveTimeOut
             keepAliveRetries1 = keepAliveRetries
-            firstMainIPMask = privateIPMask
 
         elif turn == 1:
-            secondMainIPMask = privateIPMask
-        
-        elif turn == 2:
             tunnel2 = tunnel
             keepAliveTimeOut2 = keepAliveTimeOut
             keepAliveRetries2 = keepAliveRetries
-            firstBackupIPMask = privateIPMask
+        
+        elif turn == 2:
+            tunnel3 = tunnel
+            keepAliveTimeOut3 = keepAliveTimeOut
+            keepAliveRetries3 = keepAliveRetries
         
         elif turn == 3:
-            secondBackupIPMask = privateIPMask
+            tunnel4 = tunnel
+            keepAliveTimeOut4 = keepAliveTimeOut
+            keepAliveRetries4 = keepAliveRetries
+
 
     values = {
-        "mainLocalPublicIPMask": mainLocalPublicIPMask,
-        "firstMainPrivateIPMask": firstMainIPMask,
-        "firstBackupPrivateIPMask": firstBackupIPMask,
-        "firstOS": firstOS,
-        "firstMainRoute": firstMainRoute,
-        "firstBackupRoute": firstBackupRoute,
-        "mainRemotePublicIPMask": mainRemotePublicIPMask,
-        "secondMainPrivateIPMask": secondMainIPMask,
-        "secondBackupPrivateIPMask": secondBackupIPMask,
-        "secondOS": secondOS,
-        "secondMainRoute": secondMainRoute,
-        "secondBackupRoute": secondBackupRoute,
-        "mainTunnel": tunnel1,
-        "backupTunnel": tunnel2,
+        "mainLeftPublicIPMask": mainLeftPublicIPMask,
+        "backupLeftPublicIPMask": backupLeftPublicIPMask,
+        "mainRightPublicIPMask": mainRightPublicIPMask,
+        "backupRightPublicIPMask": backupRightPublicIPMask,
+        "mainLeftOS": mainLeftOS,
+        "backupLeftOS": backupLeftOS,
+        "mainRightOS": mainRightOS,
+        "backupRightOS": backupRightOS,
+        "mainRightPublicIPMask": mainRightPublicIPMask,
+        "mainLeftRouterMainPrivateIPMask": privateIPs[0],
+        "mainLeftRouterBackupPrivateIPMask": privateIPs[1],
+        "mainRightRouterMainPrivateIPMask": privateIPs[2],
+        "mainRightRouterBackupPrivateIPMask": privateIPs[6],
+        "backupLeftRouterMainPrivateIPMask": privateIPs[4],
+        "backupLeftRouterBackupPrivateIPMask": privateIPs[5],
+        "backupRightRouterMainPrivateIPMask": privateIPs[3],
+        "backupRightRouterBackupPrivateIPMask": privateIPs[7],
+        "tunnel1": tunnel1,
+        "tunnel2": tunnel2,
+        "tunnel3": tunnel3,
+        "tunnel4": tunnel4,
         "keepAlive": keepAliveTimeOut1 + ' ' + keepAliveRetries1,
-        "keepAlive2": keepAliveTimeOut2 + ' ' + keepAliveRetries2
+        "keepAlive2": keepAliveTimeOut2 + ' ' + keepAliveRetries2,
+        "keepAlive3": keepAliveTimeOut3 + ' ' + keepAliveRetries3,
+        "keepAlive4": keepAliveTimeOut4 + ' ' + keepAliveRetries4
     }
 
     config_router1 = get_config(values, 1)
@@ -297,7 +344,7 @@ def validate_OS(osInput):
         return True
 
 #add documentation
-def add_route(targetIPMask, firstOS, nextHop, distance='1'):
+def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
 
     #Translation from /subnet_mask to a classic subnet mask
     traduction_subnet_mask = {
@@ -347,15 +394,15 @@ def add_route(targetIPMask, firstOS, nextHop, distance='1'):
     targetNetworkMask = juncture.join(listNetworkMask)
 
     #CSR
-    if firstOS == '1':
+    if mainLeftOS == '1':
         new_route = 'ip route ' + targetNetwork + ' ' + targetMask + ' ' + nextHop + ' ' + distance
 
     #VyOS
-    elif firstOS == '2':
+    elif mainLeftOS == '2':
         new_route = 'set protocols static route ' + targetNetworkMask + ' next-hop ' + nextHop + ' distance \'' + distance + '\''
 
     #Mikrotik
-    elif firstOS == '3':
+    elif mainLeftOS == '3':
         new_route = 'ip route add dst-address=' + targetNetworkMask + ' gateway=' + nextHop + ' distance=' + distance
     
     return new_route
