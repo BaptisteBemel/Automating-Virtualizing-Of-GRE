@@ -1,8 +1,4 @@
 # Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL - made in August 2022
-from msilib.schema import Error
-from re import A, S
-from select import select
-from urllib import response
 import netmiko
 import subprocess
 
@@ -73,35 +69,19 @@ def main():
     for turn in range(8):
 
         if turn == 0:
-            routerSelector = "main Left"
-            nextHopSelector = "main route"
+            routerSelector = "main left"
         elif turn == 1:
-            routerSelector = "main Left"
-            nextHopSelector = "back-up route"
+            routerSelector = "main right"
         elif turn == 2:
-            routerSelector = "main right"
-            nextHopSelector = "main route"
+            routerSelector = "back-up left"
         elif turn == 3:
-            routerSelector = "main right"
-            nextHopSelector = "back-up route" 
-        elif turn == 4:
-            routerSelector = "back-up left"
-            nextHopSelector = "main route"
-        elif turn == 5:
-            routerSelector = "back-up left"
-            nextHopSelector = "back-up route"
-        elif turn == 6:
             routerSelector = "back-up right"
-            nextHopSelector = "main route"
-        elif turn == 7:
-            routerSelector = "back-up right"
-            nextHopSelector = "back-up route" 
 
 
         while True:
             again = False
                 
-            nextHop = input("Next hop for the " + nextHopSelector + " of the " + routerSelector + " router : ")
+            nextHop = input("Next hop for the " + routerSelector + " router : ")
 
             again = validate_IP(nextHop)
 
@@ -111,26 +91,18 @@ def main():
         
         if not again and turn == 0:
             mainLeftRouterMainRoute = add_route(mainRightPublicIPMask, mainLeftOS, nextHop)
+            mainLeftRouterBackupRoute = add_route(backupRightPublicIPMask, backupLeftOS, nextHop, '5')
         
         elif not again and turn == 1:
-            mainLeftRouterBackupRoute = add_route(backupRightPublicIPMask, backupLeftOS, nextHop, '5')
+            mainRightRouterMainRoute = add_route(mainLeftPublicIPMask, mainRightOS, nextHop)
+            mainRightRouterBackupRoute = add_route(backupLeftPublicIPMask, backupRightOS, nextHop, '5')
 
         elif not again and turn == 2:
-            mainRightRouterMainRoute = add_route(mainLeftPublicIPMask, mainRightOS, nextHop)
-
-        elif not again and turn == 3:
-            mainRightRouterBackupRoute = add_route(backupLeftPublicIPMask, backupRightOS, nextHop, '5')
-        
-        elif not again and turn == 4:
             backupLeftRouterMainRoute = add_route(mainRightPublicIPMask, mainLeftOS, nextHop)
-        
-        elif not again and turn == 5:
             backupLeftRouterBackupRoute = add_route(backupRightPublicIPMask, backupLeftOS, nextHop, '5')
 
-        elif not again and turn == 6:
+        elif not again and turn == 3:
             backupRightRouterMainRoute = add_route(mainLeftPublicIPMask, mainRightOS, nextHop)
-
-        elif not again and turn == 7:
             backupRightRouterBackupRoute = add_route(backupLeftPublicIPMask, backupRightOS, nextHop, '5')
 
 
@@ -154,7 +126,7 @@ def main():
 
         while True:
             keepAliveTimeOut = input("Enter the number of seconds for the keep-alive for this tunnel (default time: 5(seconds)): ")
-            again = validate_positive_integer(keepAliveRetries)
+            again = validate_positive_integer(keepAliveTimeOut)
             if not again:
                 break
 
@@ -234,6 +206,14 @@ def main():
         "backupLeftOS": backupLeftOS,
         "mainRightOS": mainRightOS,
         "backupRightOS": backupRightOS,
+        "mainLeftRouterMainRoute": mainLeftRouterMainRoute,
+        "mainLeftRouterBackupRoute": mainLeftRouterBackupRoute,
+        "mainRightRouterMainRoute": mainRightRouterMainRoute,
+        "mainRightRouterBackupRoute": mainRightRouterBackupRoute,
+        "backupLeftRouterMainRoute": backupLeftRouterMainRoute,
+        "backupLeftRouterBackupRoute": backupLeftRouterBackupRoute,
+        "backupRightRouterMainRoute": backupRightRouterMainRoute,
+        "backupRightRouterBackupRoute": backupRightRouterBackupRoute,
         "mainRightPublicIPMask": mainRightPublicIPMask,
         "mainLeftRouterMainPrivateIPMask": privateIPs[0],
         "mainLeftRouterBackupPrivateIPMask": privateIPs[1],
@@ -255,8 +235,12 @@ def main():
 
     config_router1 = get_config(values, 1)
     config_router2 = get_config(values, 2)
+    config_router3 = get_config(values, 3)
+    config_router4 = get_config(values, 4)
 
+    configs = [config_router1, config_router2, config_router3, config_router4]
 
+    print(configs)
 
 
 
@@ -275,7 +259,6 @@ def validate_IP(ipMask):
     ipTest = inputTest[0]
     maskTest = inputTest[1]
     ipTestClasses = ipTest.split('.')
-    customer_network_address = ''
     
     #The IP's are divided into classes. There must be four classes per IP
     if len(ipTestClasses) != 4:
@@ -422,26 +405,45 @@ def validate_positive_integer(stringNumber):
 
 def get_config(values, router):
     if router == 1:
-        selector = "first"
-        otherRouter = "second"
+        selector = "mainLeft"
+        otherRouter = "mainRight"
+        otherBackupRouter = "backupRight"
+        tunnel = "1"
+        backupTunnel = "2"
     elif router == 2:
-        selector = "second"
-        otherRouter = "first"
+        selector = "backupLeft"
+        otherRouter = "mainRight"
+        otherBackupRouter = "backupRight"
+        tunnel = "3"
+        backupTunnel = "4"
+    elif router == 3:
+        selector = "mainRight"
+        otherRouter = "mainLeft"
+        otherBackupRouter = "backupLeft"
+        tunnel = "1"
+        backupTunnel = "3"
+    elif router == 4:
+        selector = "backupRight"
+        otherRouter = "mainLeft"
+        otherBackupRouter = "backupLeft"
+        tunnel = "2"
+        backupTunnel = "4"
+
 
     #CSR
     if values[selector + "OS"] == '1':
         config = [
-            'enable', 'configure terminal', values[selector + "MainRoute"], 
-            values[selector + "BackupRoute"], 'interface tunnel ' + values["mainTunnel"], 
-            'ip address ' + values[selector + "MainPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
-            'tunnel source ' + values[selector + "PublicIPMask"], 
-            'tunnel destination ' + values[otherRouter + "PublicIPMask"],
-            'keepalive ' + values["keepAlive"], 'interface tunnel ' + values["backupTunnel"], 
-            'ip address ' + values[selector + "BackupPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
-            'tunnel source ' + values[selector + "PublicIPMask"], 
-            'tunnel destination ' + values[otherRouter + "PublicIPMask"],
-            'keepalive ' + values["keepAlive"],
-
+            'enable', 'configure terminal', values[selector + "RouterMainRoute"], 
+            values[selector + "RouterBackupRoute"], 'interface tunnel ' + values["tunnel" + tunnel], 
+            'ip address ' + values[selector + "RouterMainPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
+            'tunnel source ' + values[selector + "PublicIPMask"].split('/')[0], 
+            'tunnel destination ' + values[otherRouter + "PublicIPMask"].split('/')[0],
+            'keepalive ' + values["keepAlive" + tunnel], 'interface tunnel ' + values["tunnel" + backupTunnel], 
+            'ip address ' + values[selector + "RouterBackupPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
+            'tunnel source ' + values[selector + "PublicIPMask"].split('/')[0], 
+            'tunnel destination ' + values[otherRouter + "PublicIPMask"].split('/')[0],
+            'keepalive ' + values["keepAlive" + backupTunnel],
+            'wr'
             ]
 
     #VyOS
