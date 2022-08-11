@@ -1,21 +1,29 @@
 # Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL - made in August 2022
 from msilib.schema import Error
 from re import A, S
+from select import select
 from urllib import response
 import netmiko
 import subprocess
 
 
 def main():
-
-    summary = ""
     
-    for turn in range(2):
+    for turn in range(4):
         #Public IP of the routers
+        if turn == 0:
+            print('Informations about the main local router')
+        elif turn == 1:
+            print('Informations about the main remote router')
+        elif turn == 2:
+            print('Informations about the back-up local router')
+        elif turn == 3:
+            print('Informations about the back-up remote router')
+
         while True:
             again = False
 
-            publicIPMask = input("Enter the public IP/mask of the first router: ")
+            publicIPMask = input("Enter the public IP/mask of the router: ")
 
             #Validate the format of the public IP
             again = validate_IP(publicIPMask)
@@ -34,7 +42,7 @@ def main():
         while True:
             again = False
                     
-            OS = input("Enter the OS of the first router ('1': CSR, '2': VyOS, '3': Mikrotik): ")
+            OS = input("Enter the OS of the router ('1': CSR, '2': VyOS, '3': Mikrotik): ")
 
             #Validate the format of the public IP
             again = validate_OS(OS)
@@ -44,55 +52,77 @@ def main():
                 break
 
         if turn == 0:
-            firstPublicIPMask = publicIPMask
-            firstOS = OS
+            mainLocalPublicIPMask = publicIPMask
+            mainLocalOS = OS
 
         elif turn == 1:
-            secondPublicIPMask = publicIPMask
-            secondOS = OS
+            mainRemotePublicIPMask = publicIPMask
+            mainRemoteOS = OS
+
+        elif turn == 2:
+            backupLocalPublicIPMask = publicIPMask
+            backupLocalOS = OS
+
+        elif turn == 3:
+            backupRemotePublicIPMask = publicIPMask
+            backupRemoteOS = OS
 
     
 
     #Adding routes
-    for turn in range(4):
+    for turn in range(8):
 
         if turn == 0:
-            routerSelector = "1st"
-            gatewaySelector = "Main"
+            routerSelector = "local main"
+            nextHopSelector = "Main next-hop"
         elif turn == 1:
-            gatewaySelector = "Back-up"
+            routerSelector = "local main"
+            nextHopSelector = "Back-up next-hop"
         elif turn == 2:
-            routerSelector = "2nd"
-            gatewaySelector = "Main"
+            routerSelector = "remote main"
+            nextHopSelector = "Main next-hop"
         elif turn == 3:
-            gatewaySelector = "Back-up" 
+            routerSelector = "remote main"
+            nextHopSelector = "Back-up" 
+        elif turn == 4:
+            routerSelector = "local back-up"
+            nextHopSelector = "Main route"
+        elif turn == 1:
+            routerSelector = "local back-up"
+            nextHopSelector = "Back-up route"
+        elif turn == 2:
+            routerSelector = "remote back-up"
+            nextHopSelector = "Main route"
+        elif turn == 3:
+            routerSelector = "remote back-up"
+            nextHopSelector = "Back-up route" 
 
 
         while True:
             again = False
                 
-            gateway = input(gatewaySelector + " gateway of the " + routerSelector + " router : ")
+            nextHop = input(nextHopSelector + " gateway of the " + routerSelector + " router : ")
 
-            again = validate_IP(gateway)
+            again = validate_IP(nextHop)
 
             if not again:
                 break
         
         
         if not again and routerSelector == "1st" and gatewaySelector == "Main":
-            add_route(secondPublicIPMask, firstOS, gateway)
+            firstMainRoute = add_route(mainRemotePublicIPMask, firstOS, nextHop)
         
         elif not again and routerSelector == "1st" and gatewaySelector == "Back-up":
-            add_route(secondPublicIPMask, firstOS, gateway, '5')
+            firstBackupRoute = add_route(mainRemotePublicIPMask, firstOS, nextHop, '5')
 
         elif not again and routerSelector == "2nd" and gatewaySelector == "Main":
-            add_route(firstPublicIPMask, secondOS, gateway)
+            secondMainRoute = add_route(mainLocalPublicIPMask, secondOS, nextHop)
 
         elif not again and routerSelector == "2nd" and gatewaySelector == "Back-up":
-            add_route(firstPublicIPMask, secondOS, gateway, '5')
+            secondBackupRoute = add_route(mainLocalPublicIPMask, secondOS, nextHop, '5')
 
 
-    
+    #Tunnels
     for turn in range(4):
 
         if turn == 0:
@@ -122,6 +152,8 @@ def main():
                 if not again:
                     break
 
+
+        #Private IPs
         while True:
             again = False
 
@@ -135,6 +167,7 @@ def main():
                     break
                 else:
                     print("The subnet mask for a tunnel has to be /30.")
+
 
         if turn == 0:
             tunnel1 = tunnel
@@ -154,9 +187,27 @@ def main():
         elif turn == 3:
             secondBackupIPMask = privateIPMask
 
-    
-    print(summary)
+    values = {
+        "mainLocalPublicIPMask": mainLocalPublicIPMask,
+        "firstMainPrivateIPMask": firstMainIPMask,
+        "firstBackupPrivateIPMask": firstBackupIPMask,
+        "firstOS": firstOS,
+        "firstMainRoute": firstMainRoute,
+        "firstBackupRoute": firstBackupRoute,
+        "mainRemotePublicIPMask": mainRemotePublicIPMask,
+        "secondMainPrivateIPMask": secondMainIPMask,
+        "secondBackupPrivateIPMask": secondBackupIPMask,
+        "secondOS": secondOS,
+        "secondMainRoute": secondMainRoute,
+        "secondBackupRoute": secondBackupRoute,
+        "mainTunnel": tunnel1,
+        "backupTunnel": tunnel2,
+        "keepAlive": keepAliveTimeOut1 + ' ' + keepAliveRetries1,
+        "keepAlive2": keepAliveTimeOut2 + ' ' + keepAliveRetries2
+    }
 
+    config_router1 = get_config(values, 1)
+    config_router2 = get_config(values, 2)
 
 
 
@@ -303,10 +354,11 @@ def add_route(targetIPMask, firstOS, nextHop, distance='1'):
     elif firstOS == '2':
         new_route = 'set protocols static route ' + targetNetworkMask + ' next-hop ' + nextHop + ' distance \'' + distance + '\''
 
-
     #Mikrotik
     elif firstOS == '3':
         new_route = 'ip route add dst-address=' + targetNetworkMask + ' gateway=' + nextHop + ' distance=' + distance
+    
+    return new_route
 
 
 def validate_positive_integer(stringNumber):
@@ -318,7 +370,40 @@ def validate_positive_integer(stringNumber):
     except ValueError:
         print("The input is not an integer. Try again.")
         return True
+    
 
+
+def get_config(values, router):
+    if router == 1:
+        selector = "first"
+        otherRouter = "second"
+    elif router == 2:
+        selector = "second"
+        otherRouter = "first"
+
+    #CSR
+    if values[selector + "OS"] == '1':
+        config = [
+            'enable', 'configure terminal', values[selector + "MainRoute"], 
+            values[selector + "BackupRoute"], 'interface tunnel ' + values["mainTunnel"], 
+            'ip address ' + values[selector + "MainPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
+            'tunnel source ' + values[selector + "PublicIPMask"], 
+            'tunnel destination ' + values[otherRouter + "PublicIPMask"],
+            'keepalive ' + values["keepAlive"], 'interface tunnel ' + values["backupTunnel"], 
+            'ip address ' + values[selector + "BackupPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
+            'tunnel source ' + values[selector + "PublicIPMask"], 
+            'tunnel destination ' + values[otherRouter + "PublicIPMask"],
+            'keepalive ' + values["keepAlive"],
+
+            ]
+
+    #VyOS
+    elif values[selector + "OS"] == '2':
+        pass        
+
+    #Mikrotik
+    elif values[selector + "OS"] == '3':
+        pass
 
 
 """
