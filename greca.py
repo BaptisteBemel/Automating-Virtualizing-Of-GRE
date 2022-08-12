@@ -107,6 +107,7 @@ def main():
 
 
     #Tunnels, private IPs, keep-alive
+    privateIPs = []
     for turn in range(4):
 
         if turn == 0:
@@ -138,26 +139,28 @@ def main():
 
 
         #Private IPs
-        privateIPs = []
-        for routerTurn in range(4):
+        for routerTurn in range(2):
             if turn == 0:
                 if routerTurn == 0:
                     routerSelector = "mainLeftRouterMainIP"
                 elif routerTurn == 1:
-                    routerSelector = "mainLeftRouterBackupIP"
-                elif routerTurn == 2:
                     routerSelector = "mainRightRouterMainIP"
-                elif routerTurn == 3:
-                    routerSelector = "backupRightRouterMainIP"
             elif turn == 1:
+                if routerTurn == 0:
+                    routerSelector = "mainLeftRouterBackupIP"
+                elif routerTurn == 1:
+                    routerSelector = "backupRightRouterMainIP"
+            elif turn == 2:
                 if routerTurn == 0:
                     routerSelector = "backupLeftRouterMainIP"
                 elif routerTurn == 1:
-                    routerSelector = "backupLeftRouterBackupIP"
-                elif routerTurn == 2:
                     routerSelector = "mainRightRouterBackupIP"
-                elif routerTurn == 3:
+            elif turn == 3:
+                if routerTurn == 0:
+                    routerSelector = "backupLeftRouterBackupIP"
+                elif routerTurn == 1:
                     routerSelector = "backupRightRouterBackupIP"
+
 
             while True:
                 again = False
@@ -216,18 +219,18 @@ def main():
         "backupRightRouterBackupRoute": backupRightRouterBackupRoute,
         "mainRightPublicIPMask": mainRightPublicIPMask,
         "mainLeftRouterMainPrivateIPMask": privateIPs[0],
-        "mainLeftRouterBackupPrivateIPMask": privateIPs[1],
-        "mainRightRouterMainPrivateIPMask": privateIPs[2],
-        "mainRightRouterBackupPrivateIPMask": privateIPs[6],
+        "mainLeftRouterBackupPrivateIPMask": privateIPs[2],
+        "mainRightRouterMainPrivateIPMask": privateIPs[1],
+        "mainRightRouterBackupPrivateIPMask": privateIPs[5],
         "backupLeftRouterMainPrivateIPMask": privateIPs[4],
-        "backupLeftRouterBackupPrivateIPMask": privateIPs[5],
+        "backupLeftRouterBackupPrivateIPMask": privateIPs[6],
         "backupRightRouterMainPrivateIPMask": privateIPs[3],
         "backupRightRouterBackupPrivateIPMask": privateIPs[7],
         "tunnel1": tunnel1,
         "tunnel2": tunnel2,
         "tunnel3": tunnel3,
         "tunnel4": tunnel4,
-        "keepAlive": keepAliveTimeOut1 + ' ' + keepAliveRetries1,
+        "keepAlive1": keepAliveTimeOut1 + ' ' + keepAliveRetries1,
         "keepAlive2": keepAliveTimeOut2 + ' ' + keepAliveRetries2,
         "keepAlive3": keepAliveTimeOut3 + ' ' + keepAliveRetries3,
         "keepAlive4": keepAliveTimeOut4 + ' ' + keepAliveRetries4
@@ -241,6 +244,8 @@ def main():
     configs = [config_router1, config_router2, config_router3, config_router4]
 
     print(configs)
+
+    stop = input("Press any key to stop")
 
 
 
@@ -453,6 +458,8 @@ def get_config(values, router):
     #Mikrotik
     elif values[selector + "OS"] == '3':
         pass
+
+    return config
 
 
 """
