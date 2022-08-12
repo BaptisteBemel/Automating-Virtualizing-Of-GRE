@@ -66,7 +66,7 @@ def main():
     
 
     #Adding routes
-    for turn in range(8):
+    for turn in range(4):
 
         if turn == 0:
             routerSelector = "main left"
