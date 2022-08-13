@@ -142,30 +142,30 @@ def main():
         for routerTurn in range(2):
             if turn == 0:
                 if routerTurn == 0:
-                    routerSelector = "mainLeftRouterMainIP"
+                    routerSelector = "main left"
                 elif routerTurn == 1:
-                    routerSelector = "mainRightRouterMainIP"
+                    routerSelector = "main right"
             elif turn == 1:
                 if routerTurn == 0:
-                    routerSelector = "mainLeftRouterBackupIP"
+                    routerSelector = "main left"
                 elif routerTurn == 1:
-                    routerSelector = "backupRightRouterMainIP"
+                    routerSelector = "back-up right"
             elif turn == 2:
                 if routerTurn == 0:
-                    routerSelector = "backupLeftRouterMainIP"
+                    routerSelector = "back-up left"
                 elif routerTurn == 1:
-                    routerSelector = "mainRightRouterBackupIP"
+                    routerSelector = "main right"
             elif turn == 3:
                 if routerTurn == 0:
-                    routerSelector = "backupLeftRouterBackupIP"
+                    routerSelector = "back-up left"
                 elif routerTurn == 1:
-                    routerSelector = "backupRightRouterBackupIP"
+                    routerSelector = "back-up right"
 
 
             while True:
                 again = False
 
-                privateIPMask = input("Enter the private IP/mask of the " + routerSelector + " router for the " + tunnelSelector + " tunnel: ")
+                privateIPMask = input("Enter the private IP/mask of the " + routerSelector + " router for \'" + tunnel + "\' : ")
 
                 #Validate the format of the private
                 again = validate_IP(privateIPMask)
@@ -453,7 +453,14 @@ def get_config(values, router):
 
     #VyOS
     elif values[selector + "OS"] == '2':
-        pass        
+        config = [
+            'configure', values[selector + "RouterMainRoute"], values[selector + "RouterBackupRoute"],
+            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' address ' + values[selector + "RouterMainPrivateIPMask"],
+            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' encapsulation gre',
+            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' local-ip ' + values[selector + "PublicIPMask"].split('/')[0],
+            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' remote-ip ' + values[otherRouter + "PublicIPMask"].split('/')[0],
+            'commit', 'save'
+            ]       
 
     #Mikrotik
     elif values[selector + "OS"] == '3':
