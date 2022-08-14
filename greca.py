@@ -5,7 +5,8 @@ import subprocess
 
 
 def main():
-    
+    #add comment because git says everything is up to dated even tough it clearly isnt
+    allIP = []
     for turn in range(4):
         #Public IP of the routers
         if turn == 0:
@@ -30,6 +31,11 @@ def main():
             if not again:
                 again = ping(publicIP)"""
 
+            if publicIPMask in allIP:
+                print('This IP has already been entered.') 
+                again = True
+            else:
+                allIP.append(publicIPMask)
 
             if not again:
                 break
@@ -45,17 +51,7 @@ def main():
             again = validate_OS(OS)
 
 
-            if not again:elif turn == 1:
-            mainRightPublicIPMask = publicIPMask
-            mainRightOS = OS
-
-        elif turn == 2:
-            backupLeftPublicIPMask = publicIPMask
-            backupLeftOS = OS
-
-        elif turn == 3:
-            backupRightPublicIPMask = publicIPMask
-            backupRightOS = OS
+            if not again:
                 break
 
         if turn == 0:
