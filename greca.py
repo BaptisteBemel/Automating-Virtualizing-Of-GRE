@@ -1,4 +1,5 @@
 # Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL - made in August 2022
+from posixpath import split
 import netmiko
 import subprocess
 
@@ -44,7 +45,17 @@ def main():
             again = validate_OS(OS)
 
 
-            if not again:
+            if not again:elif turn == 1:
+            mainRightPublicIPMask = publicIPMask
+            mainRightOS = OS
+
+        elif turn == 2:
+            backupLeftPublicIPMask = publicIPMask
+            backupLeftOS = OS
+
+        elif turn == 3:
+            backupRightPublicIPMask = publicIPMask
+            backupRightOS = OS
                 break
 
         if turn == 0:
@@ -121,9 +132,32 @@ def main():
         elif turn == 3:
             tunnelSelector = "back-up"
 
+        while True:
+            #Name of the GRE tunnel
+            tunnel = input("Enter the name of the " + tunnelSelector + " tunnel for the " + routerSelector + "(default name: [insert generated tunnel name]): ")
 
-        #Name of the GRE tunnel
-        tunnel = input("Enter the name of the " + tunnelSelector + " tunnel for the " + routerSelector + "(default name: [insert generated tunnel name]): ")
+            if turn == 1:
+                if tunnel == tunnel1:
+                    print('This tunnel name is already used.')
+                    again = True
+            
+            elif turn == 2:
+                if tunnel == tunnel1 or tunnel == tunnel2:
+                    print('This tunnel name is already used.')
+                    again = True
+            
+            elif turn == 3:
+                if tunnel == tunnel1 or tunnel == tunnel2 or tunnel == tunnel3:
+                    print('This tunnel name is already used.')
+                    again = True
+
+            if ' ' in tunnel:
+                print('Space are not allowed in the tunnel name.')
+                again = True
+            
+            if not again:
+                break
+
 
         while True:
             keepAliveTimeOut = input("Enter the number of seconds for the keep-alive for this tunnel (default time: 5(seconds)): ")
@@ -169,6 +203,9 @@ def main():
 
                 #Validate the format of the private
                 again = validate_IP(privateIPMask)
+
+                if privateIPMask in privateIPs:
+                    again = True
 
                 if not again:
                     if privateIPMask.split('/')[1] == "30":
@@ -272,7 +309,7 @@ def validate_IP(ipMask):
 
     #There must be only one part to the mask
     try:
-        if len(maskTest) == 0 or not (int(maskTest) >= 1 and int(maskTest) <= 32):
+        if len(maskTest) == 0 or not (int(maskTest) >= 1 and int(maskTest) <= 30):
             print('The mask has been written incorrectly. Ex: 197.164.73.5/24')
             return True
     except ValueError:
@@ -467,6 +504,31 @@ def get_config(values, router):
         pass
 
     return config
+
+
+def is_in_network(oldIP, newIP):
+    #same subnet mask?
+    if not oldIP.split('/')[1] == newIP.split('/')[1]:
+        print('The input mask does not match with the subnet.')
+        return True
+
+    #within subnet range - we don't know where does start/end the subnet but it cannot exceed a maximum distance
+    numberAvailableIP = 2 ** (32 - int(oldIP.split('/')[1])) - 2
+
+
+    ipMarker = oldIP.split('/')[0].split('.')
+    numberMarker = 0
+    for turn in range(len(ipMarker)):
+        numberMarker += int(ipMarker[turn])* 256 ** abs(turn - 3)
+
+    newIPCompare = newIP.split('/')[0].split('.')
+    numberCompare = 0
+    for turn in range(len(newIPCompare)):
+        numberCompare += int(newIPCompare[turn])* 256 ** abs(turn - 3)
+
+    if abs(numberMarker - numberCompare) > numberAvailableIP:
+        print('The input IP is not on the right subnet.')
+        return True
 
 
 """
