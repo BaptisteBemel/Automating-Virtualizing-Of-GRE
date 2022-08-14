@@ -5,7 +5,6 @@ import subprocess
 
 
 def main():
-    #add comment because git says everything is up to dated even tough it clearly isnt
     allIP = []
     for turn in range(4):
         #Public IP of the routers
@@ -34,10 +33,9 @@ def main():
             if publicIPMask in allIP:
                 print('This IP has already been entered.') 
                 again = True
-            else:
-                allIP.append(publicIPMask)
 
             if not again:
+                allIP.append(publicIPMask)
                 break
 
 
@@ -77,12 +75,16 @@ def main():
 
         if turn == 0:
             routerSelector = "main left"
+            router = mainLeftPublicIPMask
         elif turn == 1:
             routerSelector = "main right"
+            router = mainRightPublicIPMask
         elif turn == 2:
             routerSelector = "back-up left"
+            router = backupLeftPublicIPMask
         elif turn == 3:
             routerSelector = "back-up right"
+            router = backupRightPublicIPMask
 
 
         while True:
@@ -92,7 +94,15 @@ def main():
 
             again = validate_IP(nextHop)
 
+            again = is_in_network(router, nextHop)
+
+            if nextHop in allIP :
+                print('This IP has already been entered.') 
+                again = True
+
+
             if not again:
+                allIP.append(nextHop)
                 break
         
         
@@ -114,7 +124,6 @@ def main():
 
 
     #Tunnels, private IPs, keep-alive
-    privateIPs = []
     for turn in range(4):
 
         if turn == 0:
@@ -167,7 +176,7 @@ def main():
             if not again:
                 break
 
-
+        privateIPs = []
         #Private IPs
         for routerTurn in range(2):
             if turn == 0:
@@ -201,15 +210,19 @@ def main():
                 again = validate_IP(privateIPMask)
 
                 if privateIPMask in privateIPs:
+                    print('This private IP has already been entered.') 
                     again = True
+
+                if turn % 2 == 1:
+                    again = is_in_network(privateIPs.append(len(privateIPs - 1)), privateIPMask)
 
                 if not again:
                     if privateIPMask.split('/')[1] == "30":
+                        privateIPs.append(privateIPMask)
                         break
                     else:
                         print("The subnet mask for a tunnel has to be /30.")
 
-            privateIPs.append(privateIPMask)
 
 
         if turn == 0:
