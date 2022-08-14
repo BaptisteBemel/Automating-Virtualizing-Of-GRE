@@ -163,6 +163,15 @@ def main():
             if not again:
                 break
 
+        while True:
+            mtu = input("Enter the maximum transmission unit (MTU) for the \'" + tunnel + "\' tunnel(default value: 10194). : ")
+            again = validate_positive_integer(mtu)
+            if not again:
+                if int(mtu) > 10194:
+                    print('Maximum value is too high. It cannot exceed 10194.')
+                else:
+                    break
+
 
         while True:
             keepAliveTimeOut = input("Enter the number of seconds for the keep-alive for this tunnel (default time: 5(seconds)): ")
@@ -227,21 +236,25 @@ def main():
 
         if turn == 0:
             tunnel1 = tunnel
+            mtu1 = mtu
             keepAliveTimeOut1 = keepAliveTimeOut
             keepAliveRetries1 = keepAliveRetries
 
         elif turn == 1:
             tunnel2 = tunnel
+            mtu2 = mtu
             keepAliveTimeOut2 = keepAliveTimeOut
             keepAliveRetries2 = keepAliveRetries
         
         elif turn == 2:
             tunnel3 = tunnel
+            mtu3 = mtu
             keepAliveTimeOut3 = keepAliveTimeOut
             keepAliveRetries3 = keepAliveRetries
         
         elif turn == 3:
             tunnel4 = tunnel
+            mtu4 = mtu
             keepAliveTimeOut4 = keepAliveTimeOut
             keepAliveRetries4 = keepAliveRetries
 
@@ -276,6 +289,10 @@ def main():
         "tunnel2": tunnel2,
         "tunnel3": tunnel3,
         "tunnel4": tunnel4,
+        "mtu1": mtu1,
+        "mtu2": mtu2,
+        "mtu3": mtu3,
+        "mtu4": mtu4,
         "keepAlive1": keepAliveTimeOut1 + ' ' + keepAliveRetries1,
         "keepAlive2": keepAliveTimeOut2 + ' ' + keepAliveRetries2,
         "keepAlive3": keepAliveTimeOut3 + ' ' + keepAliveRetries3,
@@ -486,10 +503,12 @@ def get_config(values, router):
         config = [
             'enable', 'configure terminal', values[selector + "RouterMainRoute"], 
             values[selector + "RouterBackupRoute"], 'interface tunnel ' + values["tunnel" + tunnel], 
+            'ip mtu ' +  values["mtu" + tunnel], 'ip tcp adjust-mss ' +  values["mtu" + tunnel] - 40,
             'ip address ' + values[selector + "RouterMainPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
             'tunnel source ' + values[selector + "PublicIPMask"].split('/')[0], 
             'tunnel destination ' + values[otherRouter + "PublicIPMask"].split('/')[0],
-            'keepalive ' + values["keepAlive" + tunnel], 'interface tunnel ' + values["tunnel" + backupTunnel], 
+            'keepalive ' + values["keepAlive" + tunnel], 'interface tunnel ' + values["tunnel" + backupTunnel],
+            'ip mtu ' +  values["mtu" + backupTunnel], 'ip tcp adjust-mss ' +  values["mtu" + backupTunnel] - 40,
             'ip address ' + values[selector + "RouterBackupPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
             'tunnel source ' + values[selector + "PublicIPMask"].split('/')[0], 
             'tunnel destination ' + values[otherRouter + "PublicIPMask"].split('/')[0],
