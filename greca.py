@@ -1,7 +1,8 @@
-# Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL - made in August 2022
+# Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL
 from posixpath import split
 import netmiko
 import subprocess
+import router
 
 
 def main():
@@ -276,7 +277,6 @@ def main():
         "backupLeftRouterBackupRoute": backupLeftRouterBackupRoute,
         "backupRightRouterMainRoute": backupRightRouterMainRoute,
         "backupRightRouterBackupRoute": backupRightRouterBackupRoute,
-        "mainRightPublicIPMask": mainRightPublicIPMask,
         "mainLeftRouterMainPrivateIPMask": privateIPs[0],
         "mainLeftRouterBackupPrivateIPMask": privateIPs[2],
         "mainRightRouterMainPrivateIPMask": privateIPs[1],
