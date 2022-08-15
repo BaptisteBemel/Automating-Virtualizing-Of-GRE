@@ -522,14 +522,29 @@ def get_config(values, router):
             'configure', values[selector + "RouterMainRoute"], values[selector + "RouterBackupRoute"],
             'set interfaces tunnel ' + values["tunnel" + tunnel] + ' address ' + values[selector + "RouterMainPrivateIPMask"],
             'set interfaces tunnel ' + values["tunnel" + tunnel] + ' encapsulation gre',
+            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' mtu ' + values["mtu" + tunnel],
+            'set firewall options ' + values["tunnel" + tunnel] + ' adjust-mss ' + values["mtu" + tunnel] - 40,
             'set interfaces tunnel ' + values["tunnel" + tunnel] + ' local-ip ' + values[selector + "PublicIPMask"].split('/')[0],
             'set interfaces tunnel ' + values["tunnel" + tunnel] + ' remote-ip ' + values[otherRouter + "PublicIPMask"].split('/')[0],
+            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' address ' + values[selector + "RouterBackupTunnelPrivateIPMask"],
+            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' encapsulation gre',
+            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' mtu ' + values["mtu" + backupTunnel],
+            'set firewall options ' + values["tunnel" + backupTunnel] + ' adjust-mss ' + values["mtu" + backupTunnel] - 40,
+            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' local-ip ' + values[selector + "PublicIPMask"].split('/')[0],
+            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' remote-ip ' + values[otherBackupRouter + "PublicIPMask"].split('/')[0],
             'commit', 'save'
             ]       
 
     #Mikrotik
     elif values[selector + "OS"] == '3':
-        pass
+        'configure', values[selector + "RouterMainRoute"], values[selector + "RouterBackupRoute"],
+        '/interface gre add name=' + values["tunnel" + tunnel] + ' remote-address=' + values[otherRouter + "PublicIPMask"].split('/')[0] + ' local-address=' + values[selector + "PublicIPMask"].split('/')[0],
+        '/interface gre set name=' + values["tunnel" + tunnel] + ' mtu=' + values["mtu" + tunnel],
+        '/ip firewall mangle add out-interface=' + values["tunnel" + tunnel] + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + values["mtu" + tunnel] - 40 + ' chain=forward tcp-mss=' + + values["mtu" + tunnel] - 39 +'-65535',
+        '/interface gre add name=' + values["tunnel" + backupTunnel] + ' remote-address=' + values[otherBackupRouter + "PublicIPMask"].split('/')[0] + ' local-address=' + values[selector + "PublicIPMask"].split('/')[0],
+        '/interface gre set name=' + values["tunnel" + backupTunnel] + ' mtu=' + values["mtu" + backupTunnel]
+        '/ip firewall mangle add out-interface=' + values["tunnel" + backupTunnel] + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + values["mtu" + backupTunnel] - 40 + ' chain=forward tcp-mss=' + + values["mtu" + backupTunnel] - 39 +'-65535',
+        
 
     return config
 
