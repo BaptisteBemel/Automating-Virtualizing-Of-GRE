@@ -45,7 +45,6 @@ def main():
             #Validate the format of the public IP
             again = validate_OS(OS)
 
-
             if not again:
                 break
 
@@ -131,6 +130,7 @@ def main():
             if not again:
                 break
 
+
         while True: 
             if turn % 2 == 0:
                 keepAliveRetries = routers[turn+1].mainTunnel.get_keepAliveRetries()
@@ -142,35 +142,17 @@ def main():
             if not again:
                 break
 
+
         privateIPs = []
         #Private IPs
         for routerTurn in range(2):
-            if turn == 0:
-                if routerTurn == 0:
-                    routerSelector = "main left"
-                elif routerTurn == 1:
-                    routerSelector = "main right"
-            elif turn == 1:
-                if routerTurn == 0:
-                    routerSelector = "main left"
-                elif routerTurn == 1:
-                    routerSelector = "back-up right"
-            elif turn == 2:
-                if routerTurn == 0:
-                    routerSelector = "back-up left"
-                elif routerTurn == 1:
-                    routerSelector = "main right"
-            elif turn == 3:
-                if routerTurn == 0:
-                    routerSelector = "back-up left"
-                elif routerTurn == 1:
-                    routerSelector = "back-up right"
-
-
             while True:
                 again = False
 
-                privateIPMask = input("Enter the private IP/mask of the " + routerSelector + " router for \'" + tunnel + "\' : ")
+                if routerTurn == 0:
+                    privateIPMask = routers[turn].mainTunnel.get_privateIP()
+                else:
+                    privateIPMask = routers[turn].backupTunnel.get_privateIP()
 
                 #Validate the format of the private
                 again = validate_IP(privateIPMask)
@@ -190,35 +172,10 @@ def main():
                         print("The subnet mask for a tunnel has to be /30.")
 
 
-
-        if turn == 0:
-            tunnel1 = tunnel
-            mtu1 = mtu
-            keepAliveTimeOut1 = keepAliveTimeOut
-            keepAliveRetries1 = keepAliveRetries
-
-        elif turn == 1:
-            tunnel2 = tunnel
-            mtu2 = mtu
-            keepAliveTimeOut2 = keepAliveTimeOut
-            keepAliveRetries2 = keepAliveRetries
-        
-        elif turn == 2:
-            tunnel3 = tunnel
-            mtu3 = mtu
-            keepAliveTimeOut3 = keepAliveTimeOut
-            keepAliveRetries3 = keepAliveRetries
-        
-        elif turn == 3:
-            tunnel4 = tunnel
-            mtu4 = mtu
-            keepAliveTimeOut4 = keepAliveTimeOut
-            keepAliveRetries4 = keepAliveRetries
-
     configs = []
 
     for turn in range(4):
-        routers[turn].get_config()
+        routers[turn].config = get_config(routers)
         configs.append(routers[turn].config)    
 
     print(configs)
@@ -388,29 +345,21 @@ def validate_positive_integer(stringNumber):
 
 def get_config(values, router):
     if router == 1:
-        selector = "mainLeft"
-        otherRouter = "mainRight"
-        otherBackupRouter = "backupRight"
-        tunnel = "1"
-        backupTunnel = "2"
+        selector = 0
+        otherRouter = 1
+        otherBackupRouter = 3
     elif router == 2:
-        selector = "backupLeft"
-        otherRouter = "mainRight"
-        otherBackupRouter = "backupRight"
-        tunnel = "3"
-        backupTunnel = "4"
+        selector = 2
+        otherRouter = 1
+        otherBackupRouter = 3
     elif router == 3:
-        selector = "mainRight"
-        otherRouter = "mainLeft"
-        otherBackupRouter = "backupLeft"
-        tunnel = "1"
-        backupTunnel = "3"
+        selector = 1
+        otherRouter = 0
+        otherBackupRouter = 2
     elif router == 4:
-        selector = "backupRight"
-        otherRouter = "mainLeft"
-        otherBackupRouter = "backupLeft"
-        tunnel = "2"
-        backupTunnel = "4"
+        selector = 3
+        otherRouter = 0
+        otherBackupRouter = 2
 
 
     #CSR

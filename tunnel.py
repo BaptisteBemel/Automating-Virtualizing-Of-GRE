@@ -6,8 +6,7 @@ class Tunnel:
         self.name = ""
         self.mtu = ""
         self.mss = ""
-        self.mainPrivateIP = ""
-        self.backupPrivateIP = ""
+        self.privateIP = ""
         self.keepAlive = ""
         self.keepAliveTimeOut = ""
         self.keepAliveRetries = ""
@@ -28,3 +27,7 @@ class Tunnel:
         self.keepAliveRetries = input("Enter the number of retries for this tunnel (default number: 4): ")
         self.keepAlive = self.keepAliveTimeOut + ' ' + self.keepAliveRetries
         return self.keepAliveRetries
+
+    def get_privateIP(self):
+        self.privateIP = input("Enter the private IP/mask of the " + self.routerPosition + " router for \'" + self.name + "\' : ")
+        return self.privateIP
