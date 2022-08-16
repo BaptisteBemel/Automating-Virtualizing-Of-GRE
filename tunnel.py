@@ -17,6 +17,10 @@ class Tunnel:
 
     def get_mtu(self):
         self.mtu = input("Enter the maximum transmission unit (MTU) for the \'" + self.name + "\' tunnel(default value: 10194). : ")
+        try:
+            self.mss = str(int(self.mtu) - 40)
+        except ValueError:
+            pass
         return self.mtu
 
     def get_keepAliveTimeOut(self):

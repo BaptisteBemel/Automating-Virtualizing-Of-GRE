@@ -343,7 +343,7 @@ def validate_positive_integer(stringNumber):
     
 
 
-def get_config(values, router):
+def get_config(routers, router):
     if router == 1:
         selector = 0
         otherRouter = 1
@@ -363,51 +363,55 @@ def get_config(values, router):
 
 
     #CSR
-    if values[selector + "OS"] == '1':
+    if routers[selector].operatingSystem == '1':
         config = [
-            'enable', 'configure terminal', values[selector + "RouterMainRoute"], 
-            values[selector + "RouterBackupRoute"], 'interface tunnel ' + values["tunnel" + tunnel], 
-            'ip mtu ' +  values["mtu" + tunnel], 'ip tcp adjust-mss ' +  values["mtu" + tunnel] - 40,
-            'ip address ' + values[selector + "RouterMainPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
-            'tunnel source ' + values[selector + "PublicIPMask"].split('/')[0], 
-            'tunnel destination ' + values[otherRouter + "PublicIPMask"].split('/')[0],
-            'keepalive ' + values["keepAlive" + tunnel], 'interface tunnel ' + values["tunnel" + backupTunnel],
-            'ip mtu ' +  values["mtu" + backupTunnel], 'ip tcp adjust-mss ' +  values["mtu" + backupTunnel] - 40,
-            'ip address ' + values[selector + "RouterBackupPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
-            'tunnel source ' + values[selector + "PublicIPMask"].split('/')[0], 
-            'tunnel destination ' + values[otherRouter + "PublicIPMask"].split('/')[0],
-            'keepalive ' + values["keepAlive" + backupTunnel],
+            'enable', 'configure terminal', routers[selector].mainRoute, 
+            routers[selector].backupRoute, 
+            'interface tunnel ' + routers[selector].mainTunnel.name, 
+            'ip mtu ' +  routers[selector].mainTunnel.mtu, 
+            'ip tcp adjust-mss ' +  routers[selector].mainTunnel.mss,
+            'ip address ' + routers[selector].mainTunnel.privateIP.split('/')[0] + ' 255.255.255.252',
+            'tunnel source ' + routers[selector].insidePublicIP.split('/')[0], 
+            'tunnel destination ' + routers[otherRouter].insidePublicIP.split('/')[0],
+            'keepalive ' + routers[selector].mainTunnel.keepAlive, 
+            'interface tunnel ' + routers[selector].backupTunnel.name,
+            'ip mtu ' +  routers[selector].backupTunnel.mtu, 
+            'ip tcp adjust-mss ' +  routers[selector].backupTunnel.mss,
+            'ip address ' + routers[selector].backupTunnel.privateIP.split('/')[0] + ' 255.255.255.252',
+            'tunnel source ' + routers[selector].insidePublicIP.split('/')[0], 
+            'tunnel destination ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
+            'keepalive ' + routers[selector].backTunnel.keepAlive,
             'wr'
             ]
 
     #VyOS
-    elif values[selector + "OS"] == '2':
+    elif routers[selector].operatingSystem == '2':
         config = [
-            'configure', values[selector + "RouterMainRoute"], values[selector + "RouterBackupRoute"],
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' address ' + values[selector + "RouterMainPrivateIPMask"],
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' encapsulation gre',
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' mtu ' + values["mtu" + tunnel],
-            'set firewall options ' + values["tunnel" + tunnel] + ' adjust-mss ' + values["mtu" + tunnel] - 40,
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' local-ip ' + values[selector + "PublicIPMask"].split('/')[0],
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' remote-ip ' + values[otherRouter + "PublicIPMask"].split('/')[0],
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' address ' + values[selector + "RouterBackupTunnelPrivateIPMask"],
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' encapsulation gre',
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' mtu ' + values["mtu" + backupTunnel],
-            'set firewall options ' + values["tunnel" + backupTunnel] + ' adjust-mss ' + values["mtu" + backupTunnel] - 40,
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' local-ip ' + values[selector + "PublicIPMask"].split('/')[0],
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' remote-ip ' + values[otherBackupRouter + "PublicIPMask"].split('/')[0],
+            'configure', routers[selector].mainRoute, routers[selector].backupRoute,
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' address ' + routers[selector].mainTunnel.privateIP,
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' encapsulation gre',
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' mtu ' + routers[selector].mainTunnel.mtu,
+            'set firewall options ' + routers[selector].mainTunnel.name + ' adjust-mss ' + routers[selector].mainTunnel.mss,
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' local-ip ' + routers[selector].insidePublicIP.split('/')[0],
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' remote-ip ' + routers[otherRouter].insidePublicIP.split('/')[0],
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' address ' + routers[selector].backupTunnel.privateIP,
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' encapsulation gre',
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' mtu ' + routers[selector].backupTunnel.mtu,
+            'set firewall options ' + routers[selector].backupTunnel.name + ' adjust-mss ' + routers[selector].backupTunnel.mss,
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' local-ip ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' remote-ip ' + routers[selector].backTunnel.keepAlive,
             'commit', 'save'
             ]       
 
     #Mikrotik
-    elif values[selector + "OS"] == '3':
-        'configure', values[selector + "RouterMainRoute"], values[selector + "RouterBackupRoute"],
-        '/interface gre add name=' + values["tunnel" + tunnel] + ' remote-address=' + values[otherRouter + "PublicIPMask"].split('/')[0] + ' local-address=' + values[selector + "PublicIPMask"].split('/')[0],
-        '/interface gre set name=' + values["tunnel" + tunnel] + ' mtu=' + values["mtu" + tunnel],
-        '/ip firewall mangle add out-interface=' + values["tunnel" + tunnel] + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + values["mtu" + tunnel] - 40 + ' chain=forward tcp-mss=' + + values["mtu" + tunnel] - 39 +'-65535',
-        '/interface gre add name=' + values["tunnel" + backupTunnel] + ' remote-address=' + values[otherBackupRouter + "PublicIPMask"].split('/')[0] + ' local-address=' + values[selector + "PublicIPMask"].split('/')[0],
-        '/interface gre set name=' + values["tunnel" + backupTunnel] + ' mtu=' + values["mtu" + backupTunnel]
-        '/ip firewall mangle add out-interface=' + values["tunnel" + backupTunnel] + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + values["mtu" + backupTunnel] - 40 + ' chain=forward tcp-mss=' + + values["mtu" + backupTunnel] - 39 +'-65535',
+    elif routers[selector].operatingSystem == '3':
+        'configure', routers[selector].mainRoute, routers[selector].backupRoute,
+        '/interface gre add name=' + routers[selector].mainTunnel.name + ' remote-address=' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
+        '/interface gre set name=' + routers[selector].mainTunnel.name + ' mtu=' + routers[selector].mainTunnel.mtu,
+        '/ip firewall mangle add out-interface=' + routers[selector].mainTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].mainTunnel.mss + ' chain=forward tcp-mss=' + + routers[selector].mainTunnel.ms + 1  + '-65535',
+        '/interface gre add name=' + routers[selector].backupTunnel.name + ' remote-address=' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
+        '/interface gre set name=' + routers[selector].backupTunnel.name + ' mtu=' + routers[selector].backupTunnel.mtu
+        '/ip firewall mangle add out-interface=' + routers[selector].backupTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].backupTunnel.mss - 40 + ' chain=forward tcp-mss=' + + routers[selector].backupTunnel.mss +1 +'-65535',
         
 
     return config
