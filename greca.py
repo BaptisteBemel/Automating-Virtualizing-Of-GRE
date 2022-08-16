@@ -2,34 +2,30 @@
 from posixpath import split
 import netmiko
 import subprocess
-import router
+from router import Router
+from tunnel import Tunnel
 
 
 def main():
-    allIP = []
     for turn in range(4):
         #Public IP of the routers
-        if turn == 0:
-            print('Informations about the main left router')
-        elif turn == 1:
-            print('Informations about the main right router')
-        elif turn == 2:
-            print('Informations about the back-up left router')
-        elif turn == 3:
-            print('Informations about the back-up right router')
+                
+        router1 = Router('main left')
+        router2 = Router('main right')
+        router3 = Router('back-up left')
+        router4 = Router('back-up right')
+
+        routers = [router1, router2, router3, router4]
+
+        allIP = []
 
         while True:
             again = False
 
-            publicIPMask = input("Enter the public IP/mask of the router: ")
+            publicIPMask = routers[turn].get_insidePublicIP()
 
             #Validate the format of the public IP
             again = validate_IP(publicIPMask)
-
-            """
-            #Ping the first router
-            if not again:
-                again = ping(publicIP)"""
 
             if publicIPMask in allIP:
                 print('This IP has already been entered.') 
@@ -44,58 +40,27 @@ def main():
         while True:
             again = False
                     
-            OS = input("Enter the OS of the router ('1': CSR, '2': VyOS, '3': Mikrotik): ")
+            OS = routers[turn].get_OS()
 
             #Validate the format of the public IP
             again = validate_OS(OS)
 
-
             if not again:
                 break
-
-        if turn == 0:
-            mainLeftPublicIPMask = publicIPMask
-            mainLeftOS = OS
-
-        elif turn == 1:
-            mainRightPublicIPMask = publicIPMask
-            mainRightOS = OS
-
-        elif turn == 2:
-            backupLeftPublicIPMask = publicIPMask
-            backupLeftOS = OS
-
-        elif turn == 3:
-            backupRightPublicIPMask = publicIPMask
-            backupRightOS = OS
 
     
 
     #Adding routes
     for turn in range(4):
 
-        if turn == 0:
-            routerSelector = "main left"
-            router = mainLeftPublicIPMask
-        elif turn == 1:
-            routerSelector = "main right"
-            router = mainRightPublicIPMask
-        elif turn == 2:
-            routerSelector = "back-up left"
-            router = backupLeftPublicIPMask
-        elif turn == 3:
-            routerSelector = "back-up right"
-            router = backupRightPublicIPMask
-
-
         while True:
             again = False
                 
-            nextHop = input("Next hop for the " + routerSelector + " router : ")
+            nextHop = routers[turn].get_nextHop()
 
             again = validate_IP(nextHop)
 
-            again = is_in_network(router, nextHop)
+            again = is_in_network(routers[turn].insidePublicIP, nextHop)
 
             if nextHop in allIP :
                 print('This IP has already been entered.') 
@@ -105,68 +70,48 @@ def main():
             if not again:
                 allIP.append(nextHop)
                 break
-        
-        
-        if not again and turn == 0:
-            mainLeftRouterMainRoute = add_route(mainRightPublicIPMask, mainLeftOS, nextHop)
-            mainLeftRouterBackupRoute = add_route(backupRightPublicIPMask, backupLeftOS, nextHop, '5')
-        
-        elif not again and turn == 1:
-            mainRightRouterMainRoute = add_route(mainLeftPublicIPMask, mainRightOS, nextHop)
-            mainRightRouterBackupRoute = add_route(backupLeftPublicIPMask, backupRightOS, nextHop, '5')
 
-        elif not again and turn == 2:
-            backupLeftRouterMainRoute = add_route(mainRightPublicIPMask, mainLeftOS, nextHop)
-            backupLeftRouterBackupRoute = add_route(backupRightPublicIPMask, backupLeftOS, nextHop, '5')
-
-        elif not again and turn == 3:
-            backupRightRouterMainRoute = add_route(mainLeftPublicIPMask, mainRightOS, nextHop)
-            backupRightRouterBackupRoute = add_route(backupLeftPublicIPMask, backupRightOS, nextHop, '5')
+        if turn % 2 == 0:
+            routers[turn].mainRoute = add_route(routers[1].insidePublicIP, routers[turn].operatingSystem, nextHop)
+            routers[turn].backupRoute = add_route(routers[3].insidePublicIP, routers[turn].operatingSystem, nextHop, '5')
+        else:
+            routers[turn].mainRoute = add_route(routers[2].insidePublicIP, routers[turn].operatingSystem, nextHop)
+            routers[turn].backupRoute = add_route(routers[4].insidePublicIP, routers[turn].operatingSystem, nextHop, '5')
 
 
     #Tunnels, private IPs, keep-alive
     for turn in range(4):
 
-        if turn == 0:
-            tunnelSelector = "main"
-            routerSelector = "main left router"
-        elif turn == 1:
-            tunnelSelector = "back-up"
-        elif turn == 2:
-            tunnelSelector = "main"
-            routerSelector = "back-up left router"
-        elif turn == 3:
-            tunnelSelector = "back-up"
-
         while True:
             #Name of the GRE tunnel
-            tunnel = input("Enter the name of the " + tunnelSelector + " tunnel for the " + routerSelector + "(default name: [insert generated tunnel name]): ")
+            allTunnels = []
 
-            if turn == 1:
-                if tunnel == tunnel1:
-                    print('This tunnel name is already used.')
-                    again = True
-            
-            elif turn == 2:
-                if tunnel == tunnel1 or tunnel == tunnel2:
-                    print('This tunnel name is already used.')
-                    again = True
-            
-            elif turn == 3:
-                if tunnel == tunnel1 or tunnel == tunnel2 or tunnel == tunnel3:
-                    print('This tunnel name is already used.')
-                    again = True
+            if turn % 2 == 0:
+                tunnel = routers[turn+1].mainTunnel.get_name()
+            else:
+                tunnel = routers[turn].backupTunnel.get_name()
 
             if ' ' in tunnel:
                 print('Space are not allowed in the tunnel name.')
                 again = True
             
+            if tunnel in allTunnels :
+                print('This IP has already been entered.') 
+                again = True
+
             if not again:
+                allIP.append(tunnel)
                 break
 
+
         while True:
-            mtu = input("Enter the maximum transmission unit (MTU) for the \'" + tunnel + "\' tunnel(default value: 10194). : ")
+            if turn % 2 == 0:
+                mtu = routers[turn+1].mainTunnel.get_mtu()
+            else:
+                mtu = routers[turn].backupTunnel.get_mtu()
+
             again = validate_positive_integer(mtu)
+
             if not again:
                 if int(mtu) > 10194:
                     print('Maximum value is too high. It cannot exceed 10194.')
@@ -175,46 +120,39 @@ def main():
 
 
         while True:
-            keepAliveTimeOut = input("Enter the number of seconds for the keep-alive for this tunnel (default time: 5(seconds)): ")
+            if turn % 2 == 0:
+                keepAliveTimeOut = routers[turn+1].mainTunnel.get_keepAliveTimeOut()
+            else:
+                keepAliveTimeOut = routers[turn].backupTunnel.get_keepAliveTimeOut()
+
             again = validate_positive_integer(keepAliveTimeOut)
+
             if not again:
                 break
 
+
         while True: 
-            keepAliveRetries = input("Enter the number of retries for this tunnel (default number: 4): ")
+            if turn % 2 == 0:
+                keepAliveRetries = routers[turn+1].mainTunnel.get_keepAliveRetries()
+            else:
+                keepAliveRetries = routers[turn].backupTunnel.get_keepAliveRetries()
+
             again = validate_positive_integer(keepAliveRetries)
+
             if not again:
                 break
+
 
         privateIPs = []
         #Private IPs
         for routerTurn in range(2):
-            if turn == 0:
-                if routerTurn == 0:
-                    routerSelector = "main left"
-                elif routerTurn == 1:
-                    routerSelector = "main right"
-            elif turn == 1:
-                if routerTurn == 0:
-                    routerSelector = "main left"
-                elif routerTurn == 1:
-                    routerSelector = "back-up right"
-            elif turn == 2:
-                if routerTurn == 0:
-                    routerSelector = "back-up left"
-                elif routerTurn == 1:
-                    routerSelector = "main right"
-            elif turn == 3:
-                if routerTurn == 0:
-                    routerSelector = "back-up left"
-                elif routerTurn == 1:
-                    routerSelector = "back-up right"
-
-
             while True:
                 again = False
 
-                privateIPMask = input("Enter the private IP/mask of the " + routerSelector + " router for \'" + tunnel + "\' : ")
+                if routerTurn == 0:
+                    privateIPMask = routers[turn].mainTunnel.get_privateIP()
+                else:
+                    privateIPMask = routers[turn].backupTunnel.get_privateIP()
 
                 #Validate the format of the private
                 again = validate_IP(privateIPMask)
@@ -233,78 +171,27 @@ def main():
                     else:
                         print("The subnet mask for a tunnel has to be /30.")
 
-
-
+        
         if turn == 0:
-            tunnel1 = tunnel
-            mtu1 = mtu
-            keepAliveTimeOut1 = keepAliveTimeOut
-            keepAliveRetries1 = keepAliveRetries
-
+            routers[turn].mainGRERoute = add_route(routers[1].insidePublicIP, routers[turn].operatingSystem, routers[2].mainTunnel.privateIP)
+            routers[turn].backupGRERoute = add_route(routers[3].insidePublicIP, routers[turn].operatingSystem, routers[4].mainTunnel.privateIP, '5')
         elif turn == 1:
-            tunnel2 = tunnel
-            mtu2 = mtu
-            keepAliveTimeOut2 = keepAliveTimeOut
-            keepAliveRetries2 = keepAliveRetries
-        
+            routers[turn].mainGRERoute = add_route(routers[2].insidePublicIP, routers[turn].operatingSystem, routers[1].mainTunnel.privateIP)
+            routers[turn].backupGRERoute = add_route(routers[4].insidePublicIP, routers[turn].operatingSystem, routers[3].mainTunnel.privateIP, '5')   
         elif turn == 2:
-            tunnel3 = tunnel
-            mtu3 = mtu
-            keepAliveTimeOut3 = keepAliveTimeOut
-            keepAliveRetries3 = keepAliveRetries
-        
+            routers[turn].mainGRERoute = add_route(routers[1].insidePublicIP, routers[turn].operatingSystem, routers[2].backupTunnel.privateIP)
+            routers[turn].backupGRERoute = add_route(routers[3].insidePublicIP, routers[turn].operatingSystem, routers[4].backupTunnel.privateIP, '5')
         elif turn == 3:
-            tunnel4 = tunnel
-            mtu4 = mtu
-            keepAliveTimeOut4 = keepAliveTimeOut
-            keepAliveRetries4 = keepAliveRetries
+            routers[turn].mainGRERoute = add_route(routers[2].insidePublicIP, routers[turn].operatingSystem, routers[1].backupTunnel.privateIP)
+            routers[turn].backupGRERoute = add_route(routers[4].insidePublicIP, routers[turn].operatingSystem, routers[3].backupTunnel.privateIP, '5')
+        
 
 
-    values = {
-        "mainLeftPublicIPMask": mainLeftPublicIPMask,
-        "backupLeftPublicIPMask": backupLeftPublicIPMask,
-        "mainRightPublicIPMask": mainRightPublicIPMask,
-        "backupRightPublicIPMask": backupRightPublicIPMask,
-        "mainLeftOS": mainLeftOS,
-        "backupLeftOS": backupLeftOS,
-        "mainRightOS": mainRightOS,
-        "backupRightOS": backupRightOS,
-        "mainLeftRouterMainRoute": mainLeftRouterMainRoute,
-        "mainLeftRouterBackupRoute": mainLeftRouterBackupRoute,
-        "mainRightRouterMainRoute": mainRightRouterMainRoute,
-        "mainRightRouterBackupRoute": mainRightRouterBackupRoute,
-        "backupLeftRouterMainRoute": backupLeftRouterMainRoute,
-        "backupLeftRouterBackupRoute": backupLeftRouterBackupRoute,
-        "backupRightRouterMainRoute": backupRightRouterMainRoute,
-        "backupRightRouterBackupRoute": backupRightRouterBackupRoute,
-        "mainLeftRouterMainPrivateIPMask": privateIPs[0],
-        "mainLeftRouterBackupPrivateIPMask": privateIPs[2],
-        "mainRightRouterMainPrivateIPMask": privateIPs[1],
-        "mainRightRouterBackupPrivateIPMask": privateIPs[5],
-        "backupLeftRouterMainPrivateIPMask": privateIPs[4],
-        "backupLeftRouterBackupPrivateIPMask": privateIPs[6],
-        "backupRightRouterMainPrivateIPMask": privateIPs[3],
-        "backupRightRouterBackupPrivateIPMask": privateIPs[7],
-        "tunnel1": tunnel1,
-        "tunnel2": tunnel2,
-        "tunnel3": tunnel3,
-        "tunnel4": tunnel4,
-        "mtu1": mtu1,
-        "mtu2": mtu2,
-        "mtu3": mtu3,
-        "mtu4": mtu4,
-        "keepAlive1": keepAliveTimeOut1 + ' ' + keepAliveRetries1,
-        "keepAlive2": keepAliveTimeOut2 + ' ' + keepAliveRetries2,
-        "keepAlive3": keepAliveTimeOut3 + ' ' + keepAliveRetries3,
-        "keepAlive4": keepAliveTimeOut4 + ' ' + keepAliveRetries4
-    }
+    configs = []
 
-    config_router1 = get_config(values, 1)
-    config_router2 = get_config(values, 2)
-    config_router3 = get_config(values, 3)
-    config_router4 = get_config(values, 4)
-
-    configs = [config_router1, config_router2, config_router3, config_router4]
+    for turn in range(4):
+        routers[turn].config = get_config(routers)
+        configs.append(routers[turn].config)    
 
     print(configs)
 
@@ -471,80 +358,75 @@ def validate_positive_integer(stringNumber):
     
 
 
-def get_config(values, router):
+def get_config(routers, router):
     if router == 1:
-        selector = "mainLeft"
-        otherRouter = "mainRight"
-        otherBackupRouter = "backupRight"
-        tunnel = "1"
-        backupTunnel = "2"
+        selector = 0
+        otherRouter = 1
+        otherBackupRouter = 3
     elif router == 2:
-        selector = "backupLeft"
-        otherRouter = "mainRight"
-        otherBackupRouter = "backupRight"
-        tunnel = "3"
-        backupTunnel = "4"
+        selector = 2
+        otherRouter = 1
+        otherBackupRouter = 3
     elif router == 3:
-        selector = "mainRight"
-        otherRouter = "mainLeft"
-        otherBackupRouter = "backupLeft"
-        tunnel = "1"
-        backupTunnel = "3"
+        selector = 1
+        otherRouter = 0
+        otherBackupRouter = 2
     elif router == 4:
-        selector = "backupRight"
-        otherRouter = "mainLeft"
-        otherBackupRouter = "backupLeft"
-        tunnel = "2"
-        backupTunnel = "4"
+        selector = 3
+        otherRouter = 0
+        otherBackupRouter = 2
 
 
     #CSR
-    if values[selector + "OS"] == '1':
+    if routers[selector].operatingSystem == '1':
         config = [
-            'enable', 'configure terminal', values[selector + "RouterMainRoute"], 
-            values[selector + "RouterBackupRoute"], 'interface tunnel ' + values["tunnel" + tunnel], 
-            'ip mtu ' +  values["mtu" + tunnel], 'ip tcp adjust-mss ' +  values["mtu" + tunnel] - 40,
-            'ip address ' + values[selector + "RouterMainPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
-            'tunnel source ' + values[selector + "PublicIPMask"].split('/')[0], 
-            'tunnel destination ' + values[otherRouter + "PublicIPMask"].split('/')[0],
-            'keepalive ' + values["keepAlive" + tunnel], 'interface tunnel ' + values["tunnel" + backupTunnel],
-            'ip mtu ' +  values["mtu" + backupTunnel], 'ip tcp adjust-mss ' +  values["mtu" + backupTunnel] - 40,
-            'ip address ' + values[selector + "RouterBackupPrivateIPMask"].split('/')[0] + ' 255.255.255.252',
-            'tunnel source ' + values[selector + "PublicIPMask"].split('/')[0], 
-            'tunnel destination ' + values[otherRouter + "PublicIPMask"].split('/')[0],
-            'keepalive ' + values["keepAlive" + backupTunnel],
+            'enable', 'configure terminal', routers[selector].mainRoute, 
+            routers[selector].backupRoute, 
+            'interface tunnel ' + routers[selector].mainTunnel.name, 
+            'ip mtu ' +  routers[selector].mainTunnel.mtu, 
+            'ip tcp adjust-mss ' +  routers[selector].mainTunnel.mss,
+            'ip address ' + routers[selector].mainTunnel.privateIP.split('/')[0] + ' 255.255.255.252',
+            'tunnel source ' + routers[selector].insidePublicIP.split('/')[0], 
+            'tunnel destination ' + routers[otherRouter].insidePublicIP.split('/')[0],
+            'keepalive ' + routers[selector].mainTunnel.keepAlive, 
+            'interface tunnel ' + routers[selector].backupTunnel.name,
+            'ip mtu ' +  routers[selector].backupTunnel.mtu, 
+            'ip tcp adjust-mss ' +  routers[selector].backupTunnel.mss,
+            'ip address ' + routers[selector].backupTunnel.privateIP.split('/')[0] + ' 255.255.255.252',
+            'tunnel source ' + routers[selector].insidePublicIP.split('/')[0], 
+            'tunnel destination ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
+            'keepalive ' + routers[selector].backTunnel.keepAlive,
             'wr'
             ]
 
     #VyOS
-    elif values[selector + "OS"] == '2':
+    elif routers[selector].operatingSystem == '2':
         config = [
-            'configure', values[selector + "RouterMainRoute"], values[selector + "RouterBackupRoute"],
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' address ' + values[selector + "RouterMainPrivateIPMask"],
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' encapsulation gre',
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' mtu ' + values["mtu" + tunnel],
-            'set firewall options ' + values["tunnel" + tunnel] + ' adjust-mss ' + values["mtu" + tunnel] - 40,
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' local-ip ' + values[selector + "PublicIPMask"].split('/')[0],
-            'set interfaces tunnel ' + values["tunnel" + tunnel] + ' remote-ip ' + values[otherRouter + "PublicIPMask"].split('/')[0],
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' address ' + values[selector + "RouterBackupTunnelPrivateIPMask"],
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' encapsulation gre',
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' mtu ' + values["mtu" + backupTunnel],
-            'set firewall options ' + values["tunnel" + backupTunnel] + ' adjust-mss ' + values["mtu" + backupTunnel] - 40,
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' local-ip ' + values[selector + "PublicIPMask"].split('/')[0],
-            'set interfaces tunnel ' + values["tunnel" + backupTunnel] + ' remote-ip ' + values[otherBackupRouter + "PublicIPMask"].split('/')[0],
+            'configure', routers[selector].mainRoute, routers[selector].backupRoute,
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' address ' + routers[selector].mainTunnel.privateIP,
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' encapsulation gre',
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' mtu ' + routers[selector].mainTunnel.mtu,
+            'set firewall options ' + routers[selector].mainTunnel.name + ' adjust-mss ' + routers[selector].mainTunnel.mss,
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' local-ip ' + routers[selector].insidePublicIP.split('/')[0],
+            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' remote-ip ' + routers[otherRouter].insidePublicIP.split('/')[0],
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' address ' + routers[selector].backupTunnel.privateIP,
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' encapsulation gre',
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' mtu ' + routers[selector].backupTunnel.mtu,
+            'set firewall options ' + routers[selector].backupTunnel.name + ' adjust-mss ' + routers[selector].backupTunnel.mss,
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' local-ip ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
+            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' remote-ip ' + routers[selector].backTunnel.keepAlive,
             'commit', 'save'
             ]       
 
     #Mikrotik
-    elif values[selector + "OS"] == '3':
-        'configure', values[selector + "RouterMainRoute"], values[selector + "RouterBackupRoute"],
-        '/interface gre add name=' + values["tunnel" + tunnel] + ' remote-address=' + values[otherRouter + "PublicIPMask"].split('/')[0] + ' local-address=' + values[selector + "PublicIPMask"].split('/')[0],
-        '/interface gre set name=' + values["tunnel" + tunnel] + ' mtu=' + values["mtu" + tunnel],
-        '/ip firewall mangle add out-interface=' + values["tunnel" + tunnel] + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + values["mtu" + tunnel] - 40 + ' chain=forward tcp-mss=' + + values["mtu" + tunnel] - 39 +'-65535',
-        '/interface gre add name=' + values["tunnel" + backupTunnel] + ' remote-address=' + values[otherBackupRouter + "PublicIPMask"].split('/')[0] + ' local-address=' + values[selector + "PublicIPMask"].split('/')[0],
-        '/interface gre set name=' + values["tunnel" + backupTunnel] + ' mtu=' + values["mtu" + backupTunnel]
-        '/ip firewall mangle add out-interface=' + values["tunnel" + backupTunnel] + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + values["mtu" + backupTunnel] - 40 + ' chain=forward tcp-mss=' + + values["mtu" + backupTunnel] - 39 +'-65535',
-        
+    elif routers[selector].operatingSystem == '3':
+        'configure', routers[selector].mainRoute, routers[selector].backupRoute,
+        '/interface gre add name=' + routers[selector].mainTunnel.name + ' remote-address=' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
+        '/interface gre set name=' + routers[selector].mainTunnel.name + ' mtu=' + routers[selector].mainTunnel.mtu,
+        '/ip firewall mangle add out-interface=' + routers[selector].mainTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].mainTunnel.mss + ' chain=forward tcp-mss=' + + routers[selector].mainTunnel.ms + 1  + '-65535',
+        '/interface gre add name=' + routers[selector].backupTunnel.name + ' remote-address=' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
+        '/interface gre set name=' + routers[selector].backupTunnel.name + ' mtu=' + routers[selector].backupTunnel.mtu
+        '/ip firewall mangle add out-interface=' + routers[selector].backupTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].backupTunnel.mss - 40 + ' chain=forward tcp-mss=' + + routers[selector].backupTunnel.mss +1 +'-65535',
 
     return config
 
