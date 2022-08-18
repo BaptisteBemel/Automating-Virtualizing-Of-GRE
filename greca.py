@@ -1,6 +1,6 @@
 # Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL
 from posixpath import split
-from re import T
+from re import A, T
 import netmiko
 import subprocess
 from router import Router
@@ -255,6 +255,9 @@ def validate_IP(ipMask):
             elif ipClass == 3 and int(ipTestClasses[ipClass]) == 0:
                 print('The IP cannot finish by 0')
                 return True
+            elif ipTestClasses[ipClass] == '0':
+                print("The first class cannot be 0.")
+                return True
         except:
             print('The IP has been written incorrectly. Ex: 197.164.73.5/24')
             return True
@@ -335,10 +338,35 @@ def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
     #Get the network address of the customer
     targetIPSplit = targetIPMask.split('/')[0].split('.')
     targetMask = traduction_subnet_mask[targetIPMask.split('/')[1]]
-    targetNetwork = targetIPSplit[0:3]
-    targetNetwork.append('0')
-    juncture = '.'
-    targetNetwork = juncture.join(targetNetwork)
+    numberHostBytes = 32 - int(targetIPMask.split('/')[1])
+    binaryTargetIP = [str(bin(int(targetIPSplit[0])))[2:], str(bin(int(targetIPSplit[1])))[2:], str(bin(int(targetIPSplit[2])))[2:], str(bin(int(targetIPSplit[3])))[2:]]
+    
+    for classIP in range(len(binaryTargetIP)):
+        while len(binaryTargetIP[classIP]) < 8:
+            binaryTargetIP[classIP] = '0' + binaryTargetIP[classIP]
+
+    binaryTargetIP = ''.join(binaryTargetIP)
+    binaryTargetNetwork = binaryTargetIP[:len(binaryTargetIP) - numberHostBytes]
+
+    while len(binaryTargetNetwork) < 32:
+            binaryTargetNetwork = binaryTargetNetwork + '0'
+
+    binaryTargetNetworkSplit = ['', '', '', '']
+
+    classIP = 0
+    for byte in range(len(binaryTargetNetwork)):
+        byte += 1
+        binaryTargetNetworkSplit[classIP] += binaryTargetNetwork[byte-1]
+        if byte % 8 == 0 and byte > 0:
+            classIP += 1
+
+    targetNetworkSplit = ['', '', '', '']
+
+    for classIP in range(4):
+        targetNetworkSplit[classIP] += str(int(binaryTargetNetworkSplit[classIP], 2))
+
+    targetNetwork = '.'.join(targetNetworkSplit)
+
     listNetworkMask = [targetNetwork, targetIPMask.split('/')[1]]
     juncture = '/'
     targetNetworkMask = juncture.join(listNetworkMask)
@@ -518,33 +546,3 @@ except:
 
 if __name__ == '__main__':
     main()
-"""
-1.1.1.2/24
-1
-2.2.2.2/24
-2
-3.3.3.2/24
-3
-4.4.4.2/24
-1
-1.1.1.1/24
-2.2.2.1/24
-3.3.3.1/24
-4.4.4.1/24
-tun1
-1476
-5
-4
-tun2
-1476
-5
-4
-tun3
-1476
-5
-4
-tun4
-1476
-5
-4
-"""
