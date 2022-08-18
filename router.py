@@ -10,8 +10,10 @@ class Router:
         self.nextHop = ""
         self.mainRoute = ""
         self.backupRoute = ""
-        self.mainTunnel = Tunnel('main', position)
-        self.backupTunnel = Tunnel('backup', position)
+        self.mainGRERoute = ""
+        self.backupGRERoute = ""
+        self.mainTunnel = ""
+        self.backupTunnel = ""
         self.config = ""
 
     def get_insidePublicIP(self):
@@ -24,4 +26,4 @@ class Router:
 
     def get_nextHop(self):
         self.nextHop = input("Next hop for the " + self.position + " router : ")
-        return self.operatingSystem
+        return self.nextHop

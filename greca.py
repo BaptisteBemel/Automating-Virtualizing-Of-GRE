@@ -1,5 +1,6 @@
 # Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL
 from posixpath import split
+from re import T
 import netmiko
 import subprocess
 from router import Router
@@ -7,18 +8,16 @@ from tunnel import Tunnel
 
 
 def main():
+    allIP = []
+
+    router1 = Router('main left')
+    router2 = Router('main right')
+    router3 = Router('back-up left')
+    router4 = Router('back-up right')
+
+    routers = [router1, router2, router3, router4]
     for turn in range(4):
         #Public IP of the routers
-                
-        router1 = Router('main left')
-        router2 = Router('main right')
-        router3 = Router('back-up left')
-        router4 = Router('back-up right')
-
-        routers = [router1, router2, router3, router4]
-
-        allIP = []
-
         while True:
             again = False
 
@@ -39,8 +38,8 @@ def main():
         #OS of the routers
         while True:
             again = False
-                    
-            OS = routers[turn].get_OS()
+  
+            OS = routers[turn].get_OS() 
 
             #Validate the format of the public IP
             again = validate_OS(OS)
@@ -60,56 +59,65 @@ def main():
 
             again = validate_IP(nextHop)
 
-            again = is_in_network(routers[turn].insidePublicIP, nextHop)
-
             if nextHop in allIP :
                 print('This IP has already been entered.') 
                 again = True
 
 
             if not again:
-                allIP.append(nextHop)
-                break
+                if not is_in_network(routers[turn].insidePublicIP, nextHop):
+                    allIP.append(nextHop)
+                    break
 
+
+    for turn in range(4):
         if turn % 2 == 0:
+            routers[turn].mainRoute = add_route(routers[0].insidePublicIP, routers[turn].operatingSystem, nextHop)
+            routers[turn].backupRoute = add_route(routers[2].insidePublicIP, routers[turn].operatingSystem, nextHop, '5')
+        else:
             routers[turn].mainRoute = add_route(routers[1].insidePublicIP, routers[turn].operatingSystem, nextHop)
             routers[turn].backupRoute = add_route(routers[3].insidePublicIP, routers[turn].operatingSystem, nextHop, '5')
-        else:
-            routers[turn].mainRoute = add_route(routers[2].insidePublicIP, routers[turn].operatingSystem, nextHop)
-            routers[turn].backupRoute = add_route(routers[4].insidePublicIP, routers[turn].operatingSystem, nextHop, '5')
 
 
     #Tunnels, private IPs, keep-alive
+    tunnel1 = Tunnel('main', router1, 'main', router2)
+    tunnel2 = Tunnel('backup', router1, 'main', router4)
+    tunnel3 = Tunnel('main', router3, 'backup', router2)
+    tunnel4 = Tunnel('backup', router3, 'backup', router4)
+
+    allTunnels = [tunnel1, tunnel2, tunnel3, tunnel4]
+
+    router1.mainTunnel = tunnel1
+    router1.backupTunnel = tunnel2
+    router2.mainTunnel = tunnel1
+    router2.backupTunnel = tunnel3
+    router3.mainTunnel = tunnel3
+    router3.backupTunnel = tunnel4
+    router4.mainTunnel = tunnel2
+    router4.backupTunnel = tunnel4
+    
     for turn in range(4):
 
         while True:
             #Name of the GRE tunnel
-            allTunnels = []
 
-            if turn % 2 == 0:
-                tunnel = routers[turn+1].mainTunnel.get_name()
-            else:
-                tunnel = routers[turn].backupTunnel.get_name()
+            tunnel = allTunnels[turn].get_name()
 
             if ' ' in tunnel:
                 print('Space are not allowed in the tunnel name.')
                 again = True
             
             if tunnel in allTunnels :
-                print('This IP has already been entered.') 
+                print('This tunnel name has already been entered.') 
                 again = True
 
             if not again:
-                allIP.append(tunnel)
+                allTunnels.append(tunnel)
                 break
 
 
         while True:
-            if turn % 2 == 0:
-                mtu = routers[turn+1].mainTunnel.get_mtu()
-            else:
-                mtu = routers[turn].backupTunnel.get_mtu()
-
+            mtu = allTunnels[turn].get_mtu()
             again = validate_positive_integer(mtu)
 
             if not again:
@@ -120,10 +128,7 @@ def main():
 
 
         while True:
-            if turn % 2 == 0:
-                keepAliveTimeOut = routers[turn+1].mainTunnel.get_keepAliveTimeOut()
-            else:
-                keepAliveTimeOut = routers[turn].backupTunnel.get_keepAliveTimeOut()
+            keepAliveTimeOut = allTunnels[turn].get_keepAliveTimeOut()
 
             again = validate_positive_integer(keepAliveTimeOut)
 
@@ -132,27 +137,25 @@ def main():
 
 
         while True: 
-            if turn % 2 == 0:
-                keepAliveRetries = routers[turn+1].mainTunnel.get_keepAliveRetries()
-            else:
-                keepAliveRetries = routers[turn].backupTunnel.get_keepAliveRetries()
+            keepAliveRetries = allTunnels[turn].get_keepAliveRetries()
 
             again = validate_positive_integer(keepAliveRetries)
 
             if not again:
                 break
 
+    privateIPs = []
+    for turn in range(4):
 
-        privateIPs = []
         #Private IPs
         for routerTurn in range(2):
             while True:
                 again = False
 
                 if routerTurn == 0:
-                    privateIPMask = routers[turn].mainTunnel.get_privateIP()
+                    privateIPMask = allTunnels[turn].get_privateIP('left')
                 else:
-                    privateIPMask = routers[turn].backupTunnel.get_privateIP()
+                    privateIPMask = allTunnels[turn].get_privateIP('right')
 
                 #Validate the format of the private
                 again = validate_IP(privateIPMask)
@@ -161,8 +164,8 @@ def main():
                     print('This private IP has already been entered.') 
                     again = True
 
-                if turn % 2 == 1:
-                    again = is_in_network(privateIPs.append(len(privateIPs - 1)), privateIPMask)
+                if routerTurn == 1:
+                    again = is_in_network(privateIPs[len(privateIPs)-1], privateIPMask)
 
                 if not again:
                     if privateIPMask.split('/')[1] == "30":
@@ -173,19 +176,19 @@ def main():
 
         
         if turn == 0:
-            routers[turn].mainGRERoute = add_route(routers[1].insidePublicIP, routers[turn].operatingSystem, routers[2].mainTunnel.privateIP)
-            routers[turn].backupGRERoute = add_route(routers[3].insidePublicIP, routers[turn].operatingSystem, routers[4].mainTunnel.privateIP, '5')
+            routers[0].mainGRERoute = add_route(routers[0].insidePublicIP, routers[turn].operatingSystem, routers[1].mainTunnel.leftPrivateIP)
+            routers[0].backupGRERoute = add_route(routers[2].insidePublicIP, routers[turn].operatingSystem, routers[3].mainTunnel.leftPrivateIP, '5')
         elif turn == 1:
-            routers[turn].mainGRERoute = add_route(routers[2].insidePublicIP, routers[turn].operatingSystem, routers[1].mainTunnel.privateIP)
-            routers[turn].backupGRERoute = add_route(routers[4].insidePublicIP, routers[turn].operatingSystem, routers[3].mainTunnel.privateIP, '5')   
+            routers[1].mainGRERoute = add_route(routers[1].insidePublicIP, routers[turn].operatingSystem, routers[0].mainTunnel.rightPrivateIP)
+            routers[1].backupGRERoute = add_route(routers[3].insidePublicIP, routers[turn].operatingSystem, routers[2].mainTunnel.rightPrivateIP, '5')   
         elif turn == 2:
-            routers[turn].mainGRERoute = add_route(routers[1].insidePublicIP, routers[turn].operatingSystem, routers[2].backupTunnel.privateIP)
-            routers[turn].backupGRERoute = add_route(routers[3].insidePublicIP, routers[turn].operatingSystem, routers[4].backupTunnel.privateIP, '5')
+            routers[2].mainGRERoute = add_route(routers[0].insidePublicIP, routers[turn].operatingSystem, routers[1].backupTunnel.leftPrivateIP)
+            routers[2].backupGRERoute = add_route(routers[2].insidePublicIP, routers[turn].operatingSystem, routers[3].backupTunnel.leftPrivateIP, '5')
         elif turn == 3:
-            routers[turn].mainGRERoute = add_route(routers[2].insidePublicIP, routers[turn].operatingSystem, routers[1].backupTunnel.privateIP)
-            routers[turn].backupGRERoute = add_route(routers[4].insidePublicIP, routers[turn].operatingSystem, routers[3].backupTunnel.privateIP, '5')
+            routers[3].mainGRERoute = add_route(routers[1].insidePublicIP, routers[turn].operatingSystem, routers[0].backupTunnel.rightPrivateIP)
+            routers[3].backupGRERoute = add_route(routers[3].insidePublicIP, routers[turn].operatingSystem, routers[2].backupTunnel.rightPrivateIP, '5')
         
-
+    print('a')
 
     configs = []
 
@@ -348,7 +351,7 @@ def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
 
 def validate_positive_integer(stringNumber):
     try:
-        if not int(stringNumber) >= 0:
+        if not int(stringNumber) > 0:
                 print('The input has to be a positive integer')
                 return True
 
@@ -432,6 +435,16 @@ def get_config(routers, router):
 
 
 def is_in_network(oldIP, newIP):
+    """_summary_
+
+    Args:
+        oldIP (_type_): _description_
+        newIP (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """    
+
     #same subnet mask?
     if not oldIP.split('/')[1] == newIP.split('/')[1]:
         print('The input mask does not match with the subnet.')
@@ -479,3 +492,33 @@ except:
 
 if __name__ == '__main__':
     main()
+"""
+1.1.1.2/24
+1
+2.2.2.2/24
+2
+3.3.3.2/24
+3
+4.4.4.2/24
+1
+1.1.1.1/24
+2.2.2.1/24
+3.3.3.1/24
+4.4.4.1/24
+tun1
+1476
+5
+4
+tun2
+1476
+5
+4
+tun3
+1476
+5
+4
+tun4
+1476
+5
+4
+"""
