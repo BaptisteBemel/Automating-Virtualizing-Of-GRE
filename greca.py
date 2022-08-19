@@ -284,28 +284,36 @@ def main():
 
 
 
-#documentation
 def validate_IP(ipMask):
+    """This function verifies if an entered IP address has the correct format. 
+    The correct format in this case being: x.x.x.x/y 
 
-    #The first input contains both the customer IP and the subnet mask. This input has to be divided based on the slash.
+    Args:
+        ipMask (string): This string has the value of an IP address and a subnet mask.
+
+    Returns:
+        boolean: If any of the rules to write an IP address with its subnet mask is not respected, the function returns True. Otherwise, it returns False.
+    """
+
+    #The argument contains both the IP address and the subnet mask. It has to be divided based on the slash in order to be tested.
     inputTest = ipMask.split('/')
 
-    #The first input cannot take more than a slash
+    #If the arguments doesn't have a backslash or has more than one, the format is incorrect.
     if len(inputTest) != 2:
         print('The input was written incorrectly. The subnet mask has to be written with a slash. Ex: 197.164.73.5/24')
         return True
 
-    #Test the IP and the mask
+    #Test the IP and the subnet mask. The IP address is devided into classes so that each one can be tested.
     ipTest = inputTest[0]
     maskTest = inputTest[1]
     ipTestClasses = ipTest.split('.')
     
-    #The IP's are divided into classes. There must be four classes per IP
+    #The IP's are divided into classes. There must be four classes per IP address.
     if len(ipTestClasses) != 4:
         print('The IP has been written incorrectly. Ex: 197.164.73.5/24')
         return True
 
-    #There must be only one part to the mask
+    #There must be only one part to the mask.
     try:
         if len(maskTest) == 0 or not (int(maskTest) >= 1 and int(maskTest) <= 30):
             print('The mask has been written incorrectly. Ex: 197.164.73.5/24')
@@ -314,21 +322,21 @@ def validate_IP(ipMask):
         print('The mask has been written incorrectly. Ex: 197.164.73.5/24')
         return True
 
+    #Each class is being tested.
     for ipClass in range(len(ipTestClasses)):
         try:
-            #The classes must be numbers between 0 and 255
+            #The classes must be numbers between 0 and 255.
             if not (int(ipTestClasses[ipClass]) >= 0 and int(ipTestClasses[ipClass]) <= 255):
                 print('The IP has been written incorrectly. Ex: 197.164.73.5/24')
                 return True
-            #Forbids useless "0"
+            #Forbids useless "0" at the beginning of a class.
             elif len(ipTestClasses[ipClass]) > 1 and ipTestClasses[ipClass][0] == '0':
                 print('The IP has been written incorrectly. Ex: 197.164.73.5/24 Useless "0" must be removed.')
-                return True                   
-            #The IP cannot finish by 0
+                return True               
             elif ipClass == 3 and int(ipTestClasses[ipClass]) == 0:
                 print('The IP cannot finish by 0')
                 return True
-            elif ipTestClasses[ipClass] == '0':
+            elif ipClass == 0 and ipTestClasses[ipClass] == '0':
                 print("The first class cannot be 0.")
                 return True
         except:
@@ -336,14 +344,24 @@ def validate_IP(ipMask):
             return True
 
 
-#documentation
 def ping(host):
+    """This function uses the subprocess library to executes a ping command with the user's machine.
+
+    Args:
+        host (string): This string has the value of the inside IP address and the subnet mask of a router.
+
+    Returns:
+        boolean: If the ping fails, it returns True. If it passes, it returns False.
+    """
     print('Pinging...')
     try:
+        #It performs 3 ping request to the target "host" device.
         output = subprocess.check_output("ping -c 3 " + host.split('/')[0], shell=True)
+        #subprocess.check_output() returns a binary that has to be decoded. windows-1252 accepts characters from more languages than utf-8
         output = output.decode('windows-1252')
         
-        #Only works in french and english - If the system is in another language, it might not detect "Destination Host Unreachable" - The d is not written because it's a capital in english a small in french.
+        #Only works in french and english(suposed language) - If the system is in another language, it might not detect "Destination Host Unreachable" - The d is not written because it's a capital in english a small in french.
+        #Destination Host Unreachable and successful pings have the same ICMP response but a different output, including a string that says "Destination Host Unreachable" (in english).
         if "estination" in output:
             print('The router cannot be ping. Destination Host Unreachable')
             return True
@@ -351,13 +369,21 @@ def ping(host):
         #Correct - Ping is working
         return False
 
+    #Request Timed Out raises an error.
     except subprocess.CalledProcessError:
         print('The router cannot be ping. Request Timed Out')
         return True
     
 
-#documentation
 def validate_OS(osInput):
+    """ The function verifies if the value entered is either '1', '2' or '3'.
+
+    Args:
+        osInput (string): This string should be '1', '2' or '3'. It is the value of the operating system of the router. 1: Cisco IOS, 2: VyOS, 3: Mikrotik RouterOS
+
+    Returns:
+        boolean: If the argument is not a string with a value of '1', '2' or '3', it returns True. Otherwise, it returns False.
+    """
     try:
         if not (int(osInput) >= 1 and int(osInput) <= 3):
             print('The OS number has been written incorrectly. Please type 1 (CSR), 2 (VyOS) or 3 (Mikrotik)')
@@ -369,8 +395,18 @@ def validate_OS(osInput):
         return True
 
 
-#add documentation
 def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
+    """_summary_
+
+    Args:
+        targetIPMask (string): _description_
+        mainLeftOS (_type_): _description_
+        nextHop (_type_): _description_
+        distance (str, optional): _description_. Defaults to '1'.
+
+    Returns:
+        _type_: _description_
+    """
 
     #Translation from /subnet_mask to a classic subnet mask
     traduction_subnet_mask = {
