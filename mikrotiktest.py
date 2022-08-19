@@ -6,8 +6,8 @@ nocommands = ["ip route remove [find dst-address=6.0.0.0/24]"]
 mikro = {
     'ip': '192.168.51.45',
     'device_type': "mikrotik_routeros",
-    'username':   "admin",
-    'password':   "GRE-Test",
+    'username': "admin",
+    'password': "GRE-Test",
 }
 
 #try:

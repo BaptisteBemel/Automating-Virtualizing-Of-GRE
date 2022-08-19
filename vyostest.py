@@ -3,6 +3,8 @@ from netmiko import ConnectHandler
 commands = ["configure", "set protocols static route 6.0.0.0/24 next-hop 3.3.3.1"]
 nocommands = ["configure", "delete protocols static route 6.0.0.0/24 "]
 
+
+
 try:
     #Opening of the connection
     connection = ConnectHandler('192.168.51.41', device_type="vyos", username="vyos", password="vyos")

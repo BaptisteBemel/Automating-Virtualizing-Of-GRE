@@ -28,9 +28,21 @@ class Router:
         return self.operatingSystem
 
     def get_outsidePublicIP(self):
-        self.outsidePublicIP = input("Enter the outside public IP/mask of the " + self.position + "  router: ")
+        self.outsidePublicIP = input("Enter the outside public IP/mask of the " + self.position + " router: ")
         return self.outsidePublicIP
 
     def get_nextHop(self):
-        self.nextHop = input("Next hop for the " + self.position + " router : ")
+        self.nextHop = input("Next hop for the " + self.position + " router: ")
         return self.nextHop
+
+    def get_username(self):
+        self.username = input("Enter the username of the " + self.position + " router: ")
+        return self.username
+
+    def get_password(self):
+        self.password = input("Enter the password of the " + self.position + " router: ")
+        return self.password
+
+    def get_enable(self):
+        self.enable = input("Enter the enable password of the " + self.position + " router: ")
+        return self.enable

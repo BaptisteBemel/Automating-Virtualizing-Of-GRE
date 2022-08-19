@@ -31,6 +31,9 @@ def main():
                 again = True
 
             if not again:
+                again = ping(publicIPMask)
+
+            if not again:
                 allIP.append(publicIPMask)
                 break
 
@@ -70,7 +73,7 @@ def main():
   
             username = routers[turn].get_username() 
 
-            if re.match("^[A-Za-z0-9_-]*$", username):
+            if not re.match("^[A-Za-z0-9_-]*$", username):
                 print("This input can only contains capital and small letters, numbers, underscore and dashes.")
                 again = True
 
@@ -83,7 +86,7 @@ def main():
   
             password = routers[turn].get_password() 
 
-            if re.match("^[A-Za-z0-9_-]*$", password):
+            if not re.match("^[A-Za-z0-9_-]*$", password):
                 print("This input can only contains capital and small letters, numbers, underscore and dashes.")
                 again = True
 
@@ -97,7 +100,7 @@ def main():
     
                 enable = routers[turn].get_enable() 
 
-                if re.match("^[A-Za-z0-9_-]*$", enable):
+                if not re.match("^[A-Za-z0-9_-]*$", enable):
                     print("This input can only contains capital and small letters, numbers, underscore and dashes.")
                     again = True
 
@@ -158,7 +161,7 @@ def main():
 
             tunnel = allTunnels[turn].get_name()
 
-            if re.match("^[A-Za-z0-9_-]*$", tunnel):
+            if not re.match("^[A-Za-z0-9_-]*$", tunnel):
                 print("This input can only contains capital and small letters, numbers, underscore and dashes.")
                 again = True
             
@@ -247,7 +250,34 @@ def main():
 
     print(configs)
 
-    stop = input("Press any key to stop")
+    while True:
+            again = False
+  
+            confirm = input("Do you confirm the configurations ? (yes/no)")
+
+            if confirm == "yes":
+                push_config(configs)
+            elif confirm == "no":
+                while True:
+                    sureAgain = False
+                    sure = input("Are you sure you want to cancel the configuration ? (yes/no)")
+
+                    if sure == "yes":
+                        pass
+                    elif sure == "no":
+                        again = True
+                    else:
+                        sureAgain = True
+
+                    if not sureAgain:
+                        print("Please enter 'yes' or 'no'")
+                        break
+            else:
+                print("Please enter 'yes' or 'no'")
+                again = False
+
+            if not again:
+                break
 
 
 
@@ -307,7 +337,7 @@ def validate_IP(ipMask):
 def ping(host):
     print('Pinging...')
     try:
-        output = subprocess.check_output("ping " + host, shell=True)
+        output = subprocess.check_output("ping -c 3 " + host.split('/')[0], shell=True)
         output = output.decode('windows-1252')
         
         #Only works in french and english - If the system is in another language, it might not detect "Destination Host Unreachable" - The d is not written because it's a capital in english a small in french.
@@ -317,7 +347,6 @@ def ping(host):
         
         #Correct - Ping is working
         return False
-
 
     except subprocess.CalledProcessError:
         print('The router cannot be ping. Request Timed Out')
@@ -335,6 +364,7 @@ def validate_OS(osInput):
     except ValueError:
         print('The OS number has been written incorrectly. Please type 1 (CSR), 2 (VyOS) or 3 (Mikrotik)')
         return True
+
 
 #add documentation
 def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
@@ -566,26 +596,48 @@ def is_in_network(oldIP, newIP):
         return True
 
 
+def push_config(configs):    
+    for config in range(len(configs)):
+        if config.operatingSystem == '1':
+            device = {
+            'ip': config.insidePublicIP,
+            'device_type': "cisco_ios",
+            'username': config.username,
+            'password': config.password,
+            'secret': config.enable
+        }
+        elif config.operatingSystem == '2':
+            device = {
+            'ip': config.insidePublicIP,
+            'device_type': "vyos",
+            'username':   config.username,
+            'password':   config.password,
+        }
+        else:
+            device = {
+            'ip': configs.insidePublicIP,
+            'device_type': "mikrotik_routeros",
+            'username':   configs.username,
+            'password':   configs.password,
+        }
 
-"""
-#List of commands to run on the routeur
-commands = ['enable', 'configure terminal', new_route]
 
-#Try to connect to the router
-try:
-    #Opening of the connection
-    connection = netmiko.ConnectHandler(ip=customer_default_gateway_ip_address, device_type="cisco_ios", username="", password="")
+        #Try to connect to the router
+        try:
+            #Opening of the connection
+            connection = netmiko.ConnectHandler(**device)
 
-    #The commands are being executed and the messages are printed
-    print(connection.send_config_set(commands))
+            connection.enable()
 
-    #Closing of the connection
-    connection.disconnect()
-except:
-    #Unable to connect to the router
-    print('The connection to the router is impossible.')
-    return False
-    """
+            #The commands are being executed and the messages are printed
+            connection.send_config_set(config)
+
+            #Closing of the connection
+            connection.disconnect()
+        except:
+            #Unable to connect to the router
+            print('The connection to the router is impossible.')
+            return False
 
 
 if __name__ == '__main__':
