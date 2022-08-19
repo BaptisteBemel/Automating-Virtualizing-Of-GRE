@@ -203,7 +203,7 @@ def main():
 
     for turn in range(4):
         routers[turn].config = get_config(routers, turn + 1)
-        configs.append(routers[turn].config)    
+        configs.append([routers[turn].config, ip, os, username, password, enablePwd])    
 
     print(configs)
 
@@ -404,13 +404,13 @@ def get_config(routers, router):
         otherRouter = 1
         otherBackupRouter = 3
     elif router == 2:
-        selector = 2
-        otherRouter = 1
-        otherBackupRouter = 3
-    elif router == 3:
         selector = 1
         otherRouter = 0
         otherBackupRouter = 2
+    elif router == 3:
+        selector = 2
+        otherRouter = 1
+        otherBackupRouter = 3
     elif router == 4:
         selector = 3
         otherRouter = 0
@@ -474,16 +474,19 @@ def get_config(routers, router):
 
     #Mikrotik
     elif routers[selector].operatingSystem == '3':
-        'configure', routers[selector].mainRoute, routers[selector].backupRoute,
-        routers[selector].mainGRERoute, routers[selector].backupGRERoute,
-        '/interface gre add name=' + routers[selector].mainTunnel.name + ' remote-address=' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
-        '/interface gre set name=' + routers[selector].mainTunnel.name + ' mtu=' + routers[selector].mainTunnel.mtu,
-        '/ip firewall mangle add out-interface=' + routers[selector].mainTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].mainTunnel.mss + ' chain=forward tcp-mss=' + str(int(routers[selector].mainTunnel.mss) + 1)  + '-65535',
-        '/ip address  add address=' + mainPrivateIP + ' interface=' + routers[selector].mainTunnel.name,
-        '/interface gre add name=' + routers[selector].backupTunnel.name + ' remote-address=' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
-        '/interface gre set name=' + routers[selector].backupTunnel.name + ' mtu=' + routers[selector].backupTunnel.mtu
-        '/ip firewall mangle add out-interface=' + routers[selector].backupTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].backupTunnel.mss + ' chain=forward tcp-mss=' + str(int(routers[selector].backupTunnel.mss) + 1) +'-65535',
-        '/ip address  add address=' + backupPrivateIP + ' interface=' + routers[selector].backupTunnel.name
+        config = [
+            'configure', routers[selector].mainRoute, routers[selector].backupRoute,
+            routers[selector].mainGRERoute, routers[selector].backupGRERoute,
+            '/interface gre add name=' + routers[selector].mainTunnel.name + ' remote-address=' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
+            '/interface gre set name=' + routers[selector].mainTunnel.name + ' mtu=' + routers[selector].mainTunnel.mtu,
+            '/ip firewall mangle add out-interface=' + routers[selector].mainTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].mainTunnel.mss + ' chain=forward tcp-mss=' + str(int(routers[selector].mainTunnel.mss) + 1)  + '-65535',
+            '/ip address  add address=' + mainPrivateIP + ' interface=' + routers[selector].mainTunnel.name,
+            '/interface gre add name=' + routers[selector].backupTunnel.name + ' remote-address=' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
+            '/interface gre set name=' + routers[selector].backupTunnel.name + ' mtu=' + routers[selector].backupTunnel.mtu,
+            '/ip firewall mangle add out-interface=' + routers[selector].backupTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].backupTunnel.mss + ' chain=forward tcp-mss=' + str(int(routers[selector].backupTunnel.mss) + 1) +'-65535',
+            '/ip address  add address=' + backupPrivateIP + ' interface=' + routers[selector].backupTunnel.name
+        ]
+            
 
     return config
 
