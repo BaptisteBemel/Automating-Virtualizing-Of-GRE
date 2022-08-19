@@ -248,19 +248,22 @@ def main():
         routers[turn].config = get_config(routers, turn + 1)
         configs.append(routers[turn])    
 
-    print(configs)
+    router1.print()
+    router2.print()
+    router3.print()
+    router4.print()
 
     while True:
             again = False
   
-            confirm = input("Do you confirm the configurations ? (yes/no)")
+            confirm = input("Do you confirm the configurations ? (yes/no): ")
 
             if confirm == "yes":
                 push_config(configs)
             elif confirm == "no":
                 while True:
                     sureAgain = False
-                    sure = input("Are you sure you want to cancel the configuration ? (yes/no)")
+                    sure = input("Are you sure you want to cancel the configuration ? (yes/no): ")
 
                     if sure == "yes":
                         pass
@@ -598,27 +601,27 @@ def is_in_network(oldIP, newIP):
 
 def push_config(configs):    
     for config in range(len(configs)):
-        if config.operatingSystem == '1':
+        if configs[config].operatingSystem == '1':
             device = {
-            'ip': config.insidePublicIP,
+            'ip': configs[config].insidePublicIP,
             'device_type': "cisco_ios",
-            'username': config.username,
-            'password': config.password,
-            'secret': config.enable
+            'username': configs[config].username,
+            'password': configs[config].password,
+            'secret': configs[config].enable
         }
-        elif config.operatingSystem == '2':
+        elif configs[config].operatingSystem == '2':
             device = {
-            'ip': config.insidePublicIP,
+            'ip': configs[config].insidePublicIP,
             'device_type': "vyos",
-            'username':   config.username,
-            'password':   config.password,
+            'username': configs[config].username,
+            'password': configs[config].password,
         }
         else:
             device = {
-            'ip': configs.insidePublicIP,
+            'ip': configs[config].insidePublicIP,
             'device_type': "mikrotik_routeros",
-            'username':   configs.username,
-            'password':   configs.password,
+            'username': configs[config].username,
+            'password': configs[config].password,
         }
 
 
