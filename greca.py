@@ -1,6 +1,6 @@
 # Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL
 from posixpath import split
-from re import A, T
+import re
 import netmiko
 import subprocess
 from router import Router
@@ -64,6 +64,46 @@ def main():
             if not again:
                 break
 
+        #Username
+        while True:
+            again = False
+  
+            username = routers[turn].get_username() 
+
+            if re.match("^[A-Za-z0-9_-]*$", username):
+                print("This input can only contains capital and small letters, numbers, underscore and dashes.")
+                again = True
+
+            if not again:
+                break
+
+        #Password
+        while True:
+            again = False
+  
+            password = routers[turn].get_password() 
+
+            if re.match("^[A-Za-z0-9_-]*$", password):
+                print("This input can only contains capital and small letters, numbers, underscore and dashes.")
+                again = True
+
+            if not again:
+                break
+
+        #Enable if cisco
+        if OS == '1':
+            while True:
+                again = False
+    
+                enable = routers[turn].get_enable() 
+
+                if re.match("^[A-Za-z0-9_-]*$", enable):
+                    print("This input can only contains capital and small letters, numbers, underscore and dashes.")
+                    again = True
+
+                if not again:
+                    break
+
     
 
     #Adding routes
@@ -118,8 +158,8 @@ def main():
 
             tunnel = allTunnels[turn].get_name()
 
-            if ' ' in tunnel:
-                print('Space are not allowed in the tunnel name.')
+            if re.match("^[A-Za-z0-9_-]*$", tunnel):
+                print("This input can only contains capital and small letters, numbers, underscore and dashes.")
                 again = True
             
             if tunnel in allTunnels :
@@ -203,7 +243,7 @@ def main():
 
     for turn in range(4):
         routers[turn].config = get_config(routers, turn + 1)
-        configs.append([routers[turn].config, ip, os, username, password, enablePwd])    
+        configs.append(routers[turn])    
 
     print(configs)
 
@@ -432,7 +472,7 @@ def get_config(routers, router):
     #CSR
     if routers[selector].operatingSystem == '1':
         config = [
-            'enable', 'configure terminal', routers[selector].mainRoute, 
+            'configure terminal', routers[selector].mainRoute, 
             routers[selector].backupRoute, routers[selector].mainGRERoute,
             routers[selector].backupGRERoute,
             'interface tunnel ' + routers[selector].mainTunnel.name, 
@@ -475,7 +515,7 @@ def get_config(routers, router):
     #Mikrotik
     elif routers[selector].operatingSystem == '3':
         config = [
-            'configure', routers[selector].mainRoute, routers[selector].backupRoute,
+            routers[selector].mainRoute, routers[selector].backupRoute,
             routers[selector].mainGRERoute, routers[selector].backupGRERoute,
             '/interface gre add name=' + routers[selector].mainTunnel.name + ' remote-address=' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
             '/interface gre set name=' + routers[selector].mainTunnel.name + ' mtu=' + routers[selector].mainTunnel.mtu,
@@ -524,6 +564,7 @@ def is_in_network(oldIP, newIP):
     if abs(numberMarker - numberCompare) > numberAvailableIP:
         print('The input IP is not on the right subnet.')
         return True
+
 
 
 """

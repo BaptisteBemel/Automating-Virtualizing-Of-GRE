@@ -1,6 +1,7 @@
 from netmiko import ConnectHandler
 
-commands = ["configure terminal", "no ip route 6.0.0.0 255.255.255.0 2.2.2.1", "wr"]
+commands = ["configure terminal", "ip route 6.0.0.0 255.255.255.0 2.2.2.1", "wr"]
+nocommands = ["configure terminal", "no ip route 6.0.0.0 255.255.255.0 2.2.2.1", "wr"]
 
 try:
     #Opening of the connection
@@ -8,8 +9,16 @@ try:
 
     connection.enable()
 
+    output = connection.send_command("show ip route")
+    print(output)
+
     #The commands are being executed and the messages are printed
     connection.send_config_set(commands)
+
+    output = connection.send_command("show ip route")
+    print(output)
+
+    connection.send_config_set(nocommands)
 
     output = connection.send_command("show ip route")
     print(output)

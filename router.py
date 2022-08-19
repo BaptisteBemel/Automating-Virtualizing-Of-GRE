@@ -14,6 +14,9 @@ class Router:
         self.backupGRERoute = ""
         self.mainTunnel = ""
         self.backupTunnel = ""
+        self.username = ""
+        self.password = ""
+        self.enable = ""
         self.config = ""
 
     def get_insidePublicIP(self):

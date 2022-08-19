@@ -8,11 +8,28 @@ cisco = [['enable', 'configure terminal', 'ip route 2.2.2.0 255.255.255.0 1.1.1.
 def push_config(configs):    
     for config in range(len(configs)):
         if configs[config[2]] == '1':
-            deviceType = "cisco_ios"
+            device = {
+            'ip': configs[config[1]],
+            'device_type': "cisco_ios",
+            'username': configs[config[3]],
+            'password': configs[config[4]],
+            'secret': configs[config[5]]
+        }
         elif configs[config[2]] == '2':
-            deviceType = "vyos"
+            device = {
+            'ip': configs[config[1]],
+            'device_type': "vyos",
+            'username':   configs[config[3]],
+            'password':   configs[config[4]],
+        }
         else:
-            deviceType = "mikrotik_routeros"
+            device = {
+            'ip': configs[config[1]],
+            'device_type': "mikrotik_routeros",
+            'username':   configs[config[3]],
+            'password':   configs[config[4]],
+        }
+
 
         ip = configs[config[1]]
 
@@ -20,7 +37,9 @@ def push_config(configs):
         #Try to connect to the router
         try:
             #Opening of the connection
-            connection = netmiko.ConnectHandler(ip, device_type="cisco_ios", username="", password="")
+            connection = netmiko.ConnectHandler(**device)
+
+            connection.enable()
 
             #The commands are being executed and the messages are printed
             print(connection.send_config_set(config))
