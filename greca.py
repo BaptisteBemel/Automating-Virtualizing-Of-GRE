@@ -382,7 +382,7 @@ def validate_OS(osInput):
         osInput (string): This string should be '1', '2' or '3'. It is the value of the operating system of the router. 1: Cisco IOS, 2: VyOS, 3: Mikrotik RouterOS
 
     Returns:
-        boolean: If the argument is not a string with a value of '1', '2' or '3', it returns True. Otherwise, it returns False.
+        boolean: If the argument is a string with a value of '1', '2' or '3', it returns False. Otherwise, it returns True.
     """
     try:
         if not (int(osInput) >= 1 and int(osInput) <= 3):
@@ -396,16 +396,16 @@ def validate_OS(osInput):
 
 
 def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
-    """_summary_
+    """ This function produces a command to add a new route on the router. It has to work for the 3 differents operating systems.
 
     Args:
-        targetIPMask (string): _description_
-        mainLeftOS (_type_): _description_
-        nextHop (_type_): _description_
-        distance (str, optional): _description_. Defaults to '1'.
+        targetIPMask (string): The target value is a string with an IP adress and its subnet mask. It is an IP of the network that should be reachable by adding this route command.
+        mainLeftOS (string): The operating system of the router on which the route is being added. It is equal to 1 (CSR), 2 (VyOS) or 3 (Mikrotik)
+        nextHop (string): This is next hop of the router on which the route is being added to reach the targeted network.
+        distance (str, optional): If the new route is a back-up route, this argument is equal to 5 in order to have a floating static route. Defaults to '1'.
 
     Returns:
-        _type_: _description_
+        string: String that adds a route
     """
 
     #Translation from /subnet_mask to a classic subnet mask
@@ -444,41 +444,10 @@ def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
         '32': '255.255.255.255',
     }
 
-    #Get the network address of the customer
-    targetIPSplit = targetIPMask.split('/')[0].split('.')
+    targetNetwork = get_network(targetIPMask)
     targetMask = traduction_subnet_mask[targetIPMask.split('/')[1]]
-    numberHostBytes = 32 - int(targetIPMask.split('/')[1])
-    binaryTargetIP = [str(bin(int(targetIPSplit[0])))[2:], str(bin(int(targetIPSplit[1])))[2:], str(bin(int(targetIPSplit[2])))[2:], str(bin(int(targetIPSplit[3])))[2:]]
+    targetNetworkMask = targetNetwork + targetMask
     
-    for classIP in range(len(binaryTargetIP)):
-        while len(binaryTargetIP[classIP]) < 8:
-            binaryTargetIP[classIP] = '0' + binaryTargetIP[classIP]
-
-    binaryTargetIP = ''.join(binaryTargetIP)
-    binaryTargetNetwork = binaryTargetIP[:len(binaryTargetIP) - numberHostBytes]
-
-    while len(binaryTargetNetwork) < 32:
-            binaryTargetNetwork = binaryTargetNetwork + '0'
-
-    binaryTargetNetworkSplit = ['', '', '', '']
-
-    classIP = 0
-    for byte in range(len(binaryTargetNetwork)):
-        byte += 1
-        binaryTargetNetworkSplit[classIP] += binaryTargetNetwork[byte-1]
-        if byte % 8 == 0 and byte > 0:
-            classIP += 1
-
-    targetNetworkSplit = ['', '', '', '']
-
-    for classIP in range(4):
-        targetNetworkSplit[classIP] += str(int(binaryTargetNetworkSplit[classIP], 2))
-
-    targetNetwork = '.'.join(targetNetworkSplit)
-
-    listNetworkMask = [targetNetwork, targetIPMask.split('/')[1]]
-    juncture = '/'
-    targetNetworkMask = juncture.join(listNetworkMask)
 
     #CSR
     if mainLeftOS == '1':
@@ -496,6 +465,14 @@ def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
 
 
 def validate_positive_integer(stringNumber):
+    """This function verifies if the integer (in a string format) is a positive integer.
+
+    Args:
+        stringNumber (string): String input
+
+    Returns:
+        boolean: If the argument is a string with a value of a positive integer, it returns False. Otherwise, it returns True.
+    """
     try:
         if not int(stringNumber) > 0:
                 print('The input has to be a positive integer')
@@ -508,6 +485,15 @@ def validate_positive_integer(stringNumber):
 
 
 def get_config(routers, router):
+    """After all the values for the configuration have been entered, this function is called to produce the configuration of the 4 routers.
+
+    Args:
+        routers (list): This list contains the 4 Router objects with the values of the 4 routers
+        router (int): This integer is an index for the "routers" list.
+
+    Returns:
+        list: The return value is a list of strings. Each string is command to execute on the router. The whole list is the configuration to implement on one router.
+    """
     if router == 1:
         selector = 0
         otherRouter = 1
@@ -601,41 +587,83 @@ def get_config(routers, router):
 
 
 def is_in_network(oldIP, newIP):
-    """_summary_
+    """This function verifies if two IP address are in the same network.
 
     Args:
-        oldIP (_type_): _description_
-        newIP (_type_): _description_
+        oldIP (string): The oldIP is a string with an IP adress and its subnet mask.
+        newIP (string): The newIP value is a string with an IP adress and its subnet mask.
 
     Returns:
-        _type_: _description_
+        boolean: If the newIP is in the same network has the oldIP, it returns False. Otherwise, it returns True.
     """    
 
-    #same subnet mask?
+    #Verfies if the two subnet masks are equal
     if not oldIP.split('/')[1] == newIP.split('/')[1]:
         print('The input mask does not match with the subnet.')
         return True
 
-    #within subnet range - we don't know where does start/end the subnet but it cannot exceed a maximum distance
-    numberAvailableIP = 2 ** (32 - int(oldIP.split('/')[1])) - 2
+    oldNetwork = get_network(oldIP)
+    newNetwork = get_network(newIP)
+    
 
-
-    ipMarker = oldIP.split('/')[0].split('.')
-    numberMarker = 0
-    for turn in range(len(ipMarker)):
-        numberMarker += int(ipMarker[turn])* 256 ** abs(turn - 3)
-
-    newIPCompare = newIP.split('/')[0].split('.')
-    numberCompare = 0
-    for turn in range(len(newIPCompare)):
-        numberCompare += int(newIPCompare[turn])* 256 ** abs(turn - 3)
-
-    if abs(numberMarker - numberCompare) > numberAvailableIP:
+    if not oldNetwork == newIP:
         print('The input IP is not on the right subnet.')
         return True
 
 
-def push_config(configs):    
+def get_network(IPMask):
+    """It gets the network address of the network based on an IP address of this network.
+
+    Args:
+        IPMask (string): The IPMask is a string with an IP adress and its subnet mask.
+
+    Returns:
+        string: The return value is the network of IPMask. Without the mask.
+    """
+
+    IPSplit = IPMask.split('/')[0].split('.')
+    numberHostBytes = 32 - int(IPMask.split('/')[1])
+    binaryIP = [str(bin(int(IPSplit[0])))[2:], str(bin(int(IPSplit[1])))[2:], str(bin(int(IPSplit[2])))[2:], str(bin(int(IPSplit[3])))[2:]]
+    
+    for classIP in range(len(binaryIP)):
+        while len(binaryIP[classIP]) < 8:
+            binaryIP[classIP] = '0' + binaryIP[classIP]
+
+    binaryIP = ''.join(binaryIP)
+    binaryNetwork = binaryIP[:len(binaryIP) - numberHostBytes]
+
+    while len(binaryNetwork) < 32:
+            binaryNetwork = binaryNetwork + '0'
+
+    binaryNetworkSplit = ['', '', '', '']
+
+    classIP = 0
+    for byte in range(len(binaryNetwork)):
+        byte += 1
+        binaryNetworkSplit[classIP] += binaryNetwork[byte-1]
+        if byte % 8 == 0 and byte > 0:
+            classIP += 1
+
+    networkSplit = ['', '', '', '']
+
+    for classIP in range(4):
+        networkSplit[classIP] += str(int(binaryNetworkSplit[classIP], 2))
+
+    network = '.'.join(networkSplit)
+
+    return network
+
+
+def push_config(configs):
+    """Pushes the configuration to the routers by using the ConnectHandler() function of the netmiko library
+
+    Args:
+        configs (list): Contains 4 list that represents the 4 configurations to push
+
+    Returns:
+        boolean: If the connection fails, it returns False. It the connection is successful, it does not return anything.
+    """
+
     for config in range(len(configs)):
         if configs[config].operatingSystem == '1':
             device = {
@@ -673,6 +701,8 @@ def push_config(configs):
 
             #Closing of the connection
             connection.disconnect()
+
+            print('The configuration have been pushed.')
         except:
             #Unable to connect to the router
             print('The connection to the router is impossible.')
