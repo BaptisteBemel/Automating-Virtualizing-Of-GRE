@@ -1,6 +1,6 @@
-Manuel d'installation:
+Installation manual:
 
-Pour le bon fonctionnement de cette application sont nécessaires qu'il soit installé, sur l'ordinateur sur lequel sera utilisé l'application, Python avec une version d'au moins 3.7, les bilbiothèques Python suivantes: "netmiko", "subprocess", "re", and "posixpath". 
+For the correct operation of this application it is necessary to have installed, on the computer where the application will be used, Python with a version of at least 3.7 and the following Python libraries: "netmiko", "subprocess", "re", and "posixpath". 
 
 Linux:
 (sudo) apt-get install python3
@@ -8,11 +8,19 @@ Linux:
 pip install netmiko
 pip install regex
 
-Les bibliothèques "subprocess" et "posixpath" devraient être installées avec Python.
+The "subprocess" and "posixpath" libraries should be installed with Python.
 
-Doit aussi être installé l'outil ping. Si ce n'est pas le cas:
+The ping tool should also be installed. If this is not the case:
 
 (sudo) apt install iputils-ping
 
-Il est supposé que l'operating system de l'ordinateur sur lequel est utilisé le script est "Debian 10". Si le programme est utilisé sur un appareil avec pour operating system "Windows", il faut que le script aie l'autorisation pour effectuer la commande "ping -c", ce qui peut nécessité l'obtention de certains droits.
+Moreover, it is necessary that all interfaces of routers, gateways and end devices are configured beforehand. The routers on which the configurations will be applied and the end devices must be reachable by the computer on which the software is used.
+
+It is assumed that the operating system of the computer on which the script is used is "Debian 10". If the program is used on a device with "Windows" operating system, the script must have the authorization to perform the "ping -c" command, which may require certain rights.
+
+To install the project:
+git clone https://github.com/BaptisteBemel/Automating-Virtualizing-Of-GRE.git
+
+Once the project is installed, go to the project directory and execute the file "greca.py" with the following command:
+python3 .\greca.py
 
