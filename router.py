@@ -3,7 +3,7 @@ from tunnel import Tunnel
 class Router:
 
     def __init__(self, position):
-        """Generates the router's values
+        """Generates the router's values.
 
         Args:
             position (string): Tells where the router is located in the 4 routers (main/back-up, left/right)

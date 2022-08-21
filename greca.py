@@ -333,8 +333,8 @@ def validate_IP(ipMask):
             elif len(ipTestClasses[ipClass]) > 1 and ipTestClasses[ipClass][0] == '0':
                 print('The IP has been written incorrectly. Ex: 197.164.73.5/24 Useless "0" must be removed.')
                 return True               
-            elif ipClass == 3 and int(ipTestClasses[ipClass]) == 0:
-                print('The IP cannot finish by 0')
+            elif ipTest == get_network(ipMask):
+                print('The IP address cannot be the network address.')
                 return True
             elif ipClass == 0 and ipTestClasses[ipClass] == '0':
                 print("The first class cannot be 0.")
@@ -606,9 +606,11 @@ def is_in_network(oldIP, newIP):
     newNetwork = get_network(newIP)
     
 
-    if not oldNetwork == newIP:
+    if not oldNetwork == newNetwork:
         print('The input IP is not on the right subnet.')
         return True
+
+    return False
 
 
 def get_network(IPMask):
