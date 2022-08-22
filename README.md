@@ -1,4 +1,8 @@
-Installation manual:
+# GRE Configuration Assistant
+
+This project has been for the company SatADSL and for my graduation work at EPHEC.
+
+## Installation manual:
 
 For the correct operation of this application it is necessary to have installed, on the computer where the application will be used, Python with a version of at least 3.7 and the following Python libraries: "netmiko", "subprocess", "re", and "posixpath". 
 
@@ -24,3 +28,10 @@ git clone https://github.com/BaptisteBemel/Automating-Virtualizing-Of-GRE.git
 Once the project is installed, go to the project directory and execute the file "greca.py" with the following command:
 python3 .\greca.py
 
+## Documentation
+
+Please find the documentation in the files. 
+
+Here is the network diagram on which the project is based:
+
+![arch](https://user-images.githubusercontent.com/63234160/186002472-ea36f46d-9293-48d4-b0d8-84e7d17719a2.png)
