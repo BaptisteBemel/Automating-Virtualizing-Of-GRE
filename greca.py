@@ -126,7 +126,6 @@ def main():
 
             if not again:
                 if not is_in_network(routers[turn].insidePublicIP, nextHop):
-                    allIP.append(nextHop)
                     break
 
         if turn % 2 == 0:
@@ -179,8 +178,8 @@ def main():
             again = validate_positive_integer(mtu)
 
             if not again:
-                if int(mtu) > 10194:
-                    print('Maximum value is too high. It cannot exceed 10194.')
+                if int(mtu) > 2000 or int(mtu) < 1000:
+                    print('Maximum value is not correct. It has to be between 1000 and 2000.')
                 else:
                     break
 
@@ -191,7 +190,10 @@ def main():
             again = validate_positive_integer(keepAliveTimeOut)
 
             if not again:
-                break
+                if int(keepAliveTimeOut) > 5:
+                    print('Maximum value is not correct. It cannot be above 5.')
+                else:
+                    break
 
 
         while True: 
@@ -200,7 +202,10 @@ def main():
             again = validate_positive_integer(keepAliveRetries)
 
             if not again:
-                break
+                if int(keepAliveRetries) > 5:
+                    print('Maximum value is not correct. It cannot be above 5.')
+                else:
+                    break
 
     privateIPs = []
     for turn in range(4):
@@ -230,7 +235,7 @@ def main():
                         privateIPs.append(privateIPMask)
                         break
                     else:
-                        print("The subnet mask for a tunnel has to be /30.")
+                        print("The subnet mask for a tunnel has to be /30.") 
 
     for turn in range(4):
 
@@ -246,7 +251,7 @@ def main():
 
     for turn in range(4):
         routers[turn].config = get_config(routers, turn + 1)
-        configs.append(routers[turn])    
+        configs.append(routers[turn].config)    
 
     router1.print()
     router2.print()
@@ -315,7 +320,7 @@ def validate_IP(ipMask):
 
     #There must be only one part to the mask.
     try:
-        if len(maskTest) == 0 or not (int(maskTest) >= 1 and int(maskTest) <= 30):
+        if len(maskTest) == 0 or not (int(maskTest) >= 0 and int(maskTest) <= 32):
             print('The mask has been written incorrectly. Ex: 197.164.73.5/24')
             return True
     except ValueError:
@@ -336,8 +341,8 @@ def validate_IP(ipMask):
             elif ipTest == get_network(ipMask):
                 print('The IP address cannot be the network address.')
                 return True
-            elif ipClass == 0 and ipTestClasses[ipClass] == '0':
-                print("The first class cannot be 0.")
+            elif (ipClass == 0 and ipTestClasses[ipClass] == '0') or (ipClass == 0 and int(ipTestClasses[ipClass])  <= 223):
+                print("The first class cannot be 0 or above 223.")
                 return True
         except:
             print('The IP has been written incorrectly. Ex: 197.164.73.5/24')
