@@ -32,22 +32,24 @@ class TestGreca(unittest.TestCase):
         self.assertTrue(validate_IP('1.1.1.1'))
         self.assertTrue(validate_IP('1.1.1/1'))
         self.assertTrue(validate_IP('1.1.1.1.1/1'))
-        self.assertTrue(validate_IP('1.1.1.1/0'))
-        self.assertTrue(validate_IP('1.1.1.1/31'))
-        self.assertTrue(validate_IP('1.1.1.1/0'))
+        self.assertTrue(validate_IP('-1.1.1.1/1'))
+        self.assertTrue(validate_IP('1.1.1.1/33'))
+        self.assertTrue(validate_IP('1.1.1.1/-1'))
         self.assertTrue(validate_IP('1.256.1.1/1'))
         self.assertTrue(validate_IP('0.1.1.1/1'))
         self.assertTrue(validate_IP('1.1.1.01/1'))
         self.assertTrue(validate_IP('1.1.1.4/30'))
+        self.assertTrue(validate_IP('10.4.5.6/24/24'))
+        self.assertTrue(validate_IP('3.4.5.6/24', True))
+        self.assertFalse(validate_IP('10.4.5.6/24', True))
 
     def test_add_route(self):
-        pass
-        #self.assertEqual(add_route('192.168.3.'), '')
+        self.assertEqual(add_route('192.168.3.5/24', '1', '192.168.4.1', '5'), 'ip route 192.168.3.0 255.255.255.0 192.168.4.1 5')
         #afaire
 
     #This test needs a reachable IP address. In this example; 192.168.0.30/24
     def test_ping(self):
-        #self.assertFalse(ping('192.168.0.3/24'))
+        self.assertFalse(ping('192.168.0.3/24'))
         self.assertTrue(ping('192.168.0.3/24'))
         self.assertTrue(ping('123.45.67.89/24'))
         

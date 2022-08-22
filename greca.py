@@ -31,7 +31,8 @@ def main():
                 again = True
 
             if not again:
-                again = ping(publicIPMask)
+                pass
+                #again = ping(publicIPMask)
 
             if not again:
                 allIP.append(publicIPMask)
@@ -221,9 +222,9 @@ def main():
                     privateIPMask = allTunnels[turn].get_privateIP('right')
 
                 #Validate the format of the private
-                again = validate_IP(privateIPMask)
+                again = validate_IP(privateIPMask, True)
 
-                if privateIPMask in privateIPs:
+                if privateIPMask in privateIPs or privateIPMask in allIP:
                     print('This private IP has already been entered.') 
                     again = True
 
@@ -289,7 +290,7 @@ def main():
 
 
 
-def validate_IP(ipMask):
+def validate_IP(ipMask, isPrivate=False):
     """This function verifies if an entered IP address has the correct format. 
     The correct format in this case being: x.x.x.x/y 
 
@@ -341,12 +342,19 @@ def validate_IP(ipMask):
             elif ipTest == get_network(ipMask):
                 print('The IP address cannot be the network address.')
                 return True
-            elif (ipClass == 0 and ipTestClasses[ipClass] == '0') or (ipClass == 0 and int(ipTestClasses[ipClass])  <= 223):
+            elif (ipClass == 0 and ipTestClasses[ipClass] == '0') or (ipClass == 0 and int(ipTestClasses[ipClass])  > 223):
                 print("The first class cannot be 0 or above 223.")
                 return True
         except:
             print('The IP has been written incorrectly. Ex: 197.164.73.5/24')
             return True
+
+    if not (get_network(ipTest + '/8') == '10.0.0.0' or get_network(ipTest + '/12') == '172.16.0.0' or get_network(ipTest + '/16') == '192.168.0.0' or get_network(ipTest + '/4') == '224.0.0.0') and isPrivate:
+        print('The private IP is not within a correct private IP\'s range')
+        return True
+    elif not isPrivate and (get_network(ipTest + '/8') == '10.0.0.0' or get_network(ipTest + '/12') == '172.16.0.0' or get_network(ipTest + '/16') == '192.168.0.0' or get_network(ipTest + '/4') == '224.0.0.0'):
+        print('The public IP cannot be in the private IP\'s range')
+        return True
 
 
 def ping(host):
