@@ -408,7 +408,7 @@ def validate_OS(osInput):
         return True
 
 
-def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
+def add_route(targetIPMask, mainLeftOS, nextHop, distance='0'):
     """ This function produces a command to add a new route on the router. It has to work for the 3 differents operating systems.
 
     Args:
@@ -459,7 +459,7 @@ def add_route(targetIPMask, mainLeftOS, nextHop, distance='1'):
 
     targetNetwork = get_network(targetIPMask)
     targetMask = traduction_subnet_mask[targetIPMask.split('/')[1]]
-    targetNetworkMask = targetNetwork + targetMask
+    targetNetworkMask = targetNetwork + '/' + targetIPMask.split('/')[1]
     
 
     #CSR
