@@ -180,7 +180,7 @@ def main():
 
             if not again:
                 if int(mtu) > 2000 or int(mtu) < 1000:
-                    print('Maximum value is not correct. It has to be between 1000 and 2000.')
+                    print('This value is not correct. It has to be between 1000 and 2000.')
                 else:
                     break
 
@@ -192,7 +192,7 @@ def main():
 
             if not again:
                 if int(keepAliveTimeOut) > 5:
-                    print('Maximum value is not correct. It cannot be above 5.')
+                    print('This value is not correct. It cannot be above 5.')
                 else:
                     break
 
@@ -204,7 +204,7 @@ def main():
 
             if not again:
                 if int(keepAliveRetries) > 5:
-                    print('Maximum value is not correct. It cannot be above 5.')
+                    print('This value is not correct. It cannot be above 5.')
                 else:
                     break
 

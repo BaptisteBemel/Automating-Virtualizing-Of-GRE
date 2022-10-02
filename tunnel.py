@@ -30,7 +30,7 @@ class Tunnel:
             string: Name entered by the user.
         """
 
-        self.name = input("Enter the name of the " + self.leftPosition + " tunnel for the " + self.rightPosition + ": ")
+        self.name = input("Enter the name of the " + self.leftPosition + " tunnel for the " + self.rightPosition + " left router: ")
         return self.name
 
     def get_mtu(self):
