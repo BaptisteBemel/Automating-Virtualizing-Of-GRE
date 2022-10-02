@@ -24,7 +24,7 @@ def main():
             publicIPMask = routers[turn].get_insidePublicIP()
 
             #Validate the format of the public IP
-            again = validate_IP(publicIPMask)
+            #again = validate_IP(publicIPMask)
 
             if publicIPMask in allIP:
                 print('This IP has already been entered.') 
@@ -59,7 +59,7 @@ def main():
             outsidePublicIP = routers[turn].get_outsidePublicIP() 
 
             #Validate the format of the public IP
-            again = validate_IP(outsidePublicIP)
+            #again = validate_IP(outsidePublicIP)
 
             if outsidePublicIP in allIP:
                 print('This IP has already been entered.') 
@@ -118,7 +118,7 @@ def main():
                 
             nextHop = routers[turn].get_nextHop()
 
-            again = validate_IP(nextHop)
+            #again = validate_IP(nextHop)
 
             if nextHop in allIP :
                 print('This IP has already been entered.') 
