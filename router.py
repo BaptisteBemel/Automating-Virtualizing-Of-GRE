@@ -106,9 +106,13 @@ class Router:
         """ Prints the configuration for a specific router
         """
 
-        output = "Configuration of the " + self.position + ":\nInside public IP: " + self.insidePublicIP + "\nOutside public IP: " + self.outsidePublicIP + "\nOperating system: " + self.operatingSystem + "\nNext hop: " + self.nextHop + "\nMain route: " + self.mainRoute + "\nBack-up route: " + self.backupRoute + "\nMain GRE route: " + \
-            self.mainGRERoute + "\nBack-up GRE route: " + self.backupGRERoute + "\nMain tunnel: " + self.mainTunnel + "\nBack-up tunnel: " + self.backupTunnel + \
-            "\nUsername: " + self.username + "\nPassword: " + self.password + \
+        output = "Configuration of the " + self.position + ":\nInside public IP: " + \
+            self.insidePublicIP + "\nOutside public IP: " + self.outsidePublicIP + "\nOperating system: " + \
+            self.operatingSystem + "\nNext hop: " + self.nextHop + "\nMain route: " + self.mainRoute + \
+            "\nBack-up route: " + self.backupRoute + "\nMain GRE route: " + \
+            self.mainGRERoute + "\nBack-up GRE route: " + self.backupGRERoute + \
+            "\nMain tunnel: " + self.mainTunnel.name + "\nBack-up tunnel: " + self.backupTunnel.name + "\nUsername: " + \
+            self.username + "\nPassword: " + self.password + \
             "\nEnable password (field empty is the router is not running on cisco IOS):" + self.enable
 
         print(output)

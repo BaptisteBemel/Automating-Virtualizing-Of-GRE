@@ -205,6 +205,10 @@ class TestGreca(unittest.TestCase):
             'keepalive 5 4',
             'wr'
             ])
+        self.assertEqual(get_config(routers, 2), [
+            ])
+        self.assertEqual(get_config(routers, 3), [
+            ])
 
     def test_is_in_network(self):
         self.assertFalse(is_in_network('192.168.1.1/24', '192.168.1.254/24'))
@@ -220,50 +224,6 @@ class TestGreca(unittest.TestCase):
 
     #Informations about the routers shall be correct
     def test_push_config(self):
-        pass
-
-    #Test of router.py methods - Do I need to try simple get input ?
-
-    def test_get_insidePublicIP(self):
-        pass
-
-    def test_get_OS(self):
-        pass
-
-    def test_get_outsidePublicIP(self):
-        pass
-
-    def test_get_nextHop(self):
-        pass
-
-    def test_get_username(self):
-        pass
-
-    def test_get_password(self):
-        pass
-
-    def test_get_enable(self):
-        pass
-
-    def test_print(self):
-        pass
-
-
-    #Test of tunnel.py methods
-
-    def test_get_name(self):
-        pass
-
-    def test_get_mtu(self):
-        pass
-
-    def test_get_keepAliveTimeOut(self):
-        pass
-
-    def test_get_keepAliveRetries(self):
-        pass
-
-    def test_get_privateIP(self):
         pass
 
 
