@@ -24,7 +24,7 @@ def main():
             publicIPMask = routers[turn].get_insidePublicIP()
 
             #Validate the format of the public IP
-            again = validate_IP(publicIPMask)
+            #again = validate_IP(publicIPMask)
 
             if publicIPMask in allIP:
                 print('This IP has already been entered.') 
@@ -59,7 +59,7 @@ def main():
             outsidePublicIP = routers[turn].get_outsidePublicIP() 
 
             #Validate the format of the public IP
-            again = validate_IP(outsidePublicIP)
+            #again = validate_IP(outsidePublicIP)
 
             if outsidePublicIP in allIP:
                 print('This IP has already been entered.') 
@@ -118,7 +118,7 @@ def main():
                 
             nextHop = routers[turn].get_nextHop()
 
-            again = validate_IP(nextHop)
+            #again = validate_IP(nextHop)
 
             if nextHop in allIP :
                 print('This IP has already been entered.') 
@@ -222,7 +222,7 @@ def main():
                     privateIPMask = allTunnels[turn].get_privateIP('right')
 
                 #Validate the format of the private
-                again = validate_IP(privateIPMask, True)
+                #again = validate_IP(privateIPMask, True)
 
                 if privateIPMask in privateIPs or privateIPMask in allIP:
                     print('This private IP has already been entered.') 
@@ -252,7 +252,7 @@ def main():
 
     for turn in range(4):
         routers[turn].config = get_config(routers, turn + 1)
-        configs.append(routers[turn].config)    
+        configs.append([routers[turn], routers[turn].config])    
 
     router1.print()
     router2.print()
@@ -680,27 +680,27 @@ def push_config(configs):
     """
 
     for config in range(len(configs)):
-        if configs[config].operatingSystem == '1':
+        if configs[config][0].operatingSystem == '1':
             device = {
-            'ip': configs[config].insidePublicIP,
+            'ip': configs[config][0].insidePublicIP,
             'device_type': "cisco_ios",
-            'username': configs[config].username,
-            'password': configs[config].password,
-            'secret': configs[config].enable
+            'username': configs[config][0].username,
+            'password': configs[config][0].password,
+            'secret': configs[config][0].enable
         }
-        elif configs[config].operatingSystem == '2':
+        elif configs[config][0].operatingSystem == '2':
             device = {
-            'ip': configs[config].insidePublicIP,
+            'ip': configs[config][0].insidePublicIP,
             'device_type': "vyos",
-            'username': configs[config].username,
-            'password': configs[config].password,
+            'username': configs[config][0].username,
+            'password': configs[config][0].password,
         }
         else:
             device = {
-            'ip': configs[config].insidePublicIP,
+            'ip': configs[config][0].insidePublicIP,
             'device_type': "mikrotik_routeros",
-            'username': configs[config].username,
-            'password': configs[config].password,
+            'username': configs[config][0].username,
+            'password': configs[config][0].password,
         }
 
 
@@ -712,7 +712,7 @@ def push_config(configs):
             connection.enable()
 
             #The commands are being executed and the messages are printed
-            connection.send_config_set(config)
+            connection.send_config_set(configs[config][1])
 
             #Closing of the connection
             connection.disconnect()
