@@ -5,6 +5,7 @@ import netmiko
 import subprocess
 from router import Router
 from tunnel import Tunnel
+import os
 
 
 def main():
@@ -107,7 +108,6 @@ def main():
 
                 if not again:
                     break
-
     
 
     #Adding routes
@@ -153,6 +153,7 @@ def main():
     router3.backupTunnel = tunnel4
     router4.mainTunnel = tunnel2
     router4.backupTunnel = tunnel4
+    
     
     for turn in range(4):
 
@@ -252,7 +253,10 @@ def main():
 
     for turn in range(4):
         routers[turn].config = get_config(routers, turn + 1)
-        configs.append([routers[turn], routers[turn].config])    
+        configs.append([routers[turn], routers[turn].config])  
+
+    #The software shall be used onto linux OS. If another OS is used, change the command below to clear the terminal
+    os.system("clear")  
 
     router1.print()
     router2.print()

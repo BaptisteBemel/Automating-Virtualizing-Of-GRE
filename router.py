@@ -1,6 +1,5 @@
 from re import A
 from tunnel import Tunnel
-import os
 
 
 class Router:
@@ -116,8 +115,5 @@ class Router:
             "\nMain tunnel: " + self.mainTunnel.name + "\nBack-up tunnel: " + self.backupTunnel.name + "\nUsername: " + \
             self.username + "\nPassword: " + self.password + \
             "\nEnable password (field empty is the router is not running on cisco IOS): " + self.enable
-
-        #The software shall be used onto linux OS. If another OS is used, change the command below to clear the terminal
-        os.system("clear")
 
         print(output)
