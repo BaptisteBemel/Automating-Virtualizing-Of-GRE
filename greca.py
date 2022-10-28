@@ -686,7 +686,7 @@ def push_config(configs):
     for config in range(len(configs)):
         if configs[config][0].operatingSystem == '1':
             device = {
-            'ip': configs[config][0].insidePublicIP,
+            'ip': configs[config][0].insidePublicIP.split('/')[0],
             'device_type': "cisco_ios",
             'username': configs[config][0].username,
             'password': configs[config][0].password,
@@ -694,14 +694,14 @@ def push_config(configs):
         }
         elif configs[config][0].operatingSystem == '2':
             device = {
-            'ip': configs[config][0].insidePublicIP,
+            'ip': configs[config][0].insidePublicIP.split('/')[0],
             'device_type': "vyos",
             'username': configs[config][0].username,
             'password': configs[config][0].password,
         }
         else:
             device = {
-            'ip': configs[config][0].insidePublicIP,
+            'ip': configs[config][0].insidePublicIP.split('/')[0],
             'device_type': "mikrotik_routeros",
             'username': configs[config][0].username,
             'password': configs[config][0].password,
