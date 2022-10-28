@@ -143,7 +143,7 @@ def main():
     tunnel3 = Tunnel('main', router3, 'backup', router2)
     tunnel4 = Tunnel('backup', router3, 'backup', router4)
 
-    allTunnels = [tunnel1, tunnel2, tunnel3, tunnel4]
+    tunnels = [tunnel1, tunnel2, tunnel3, tunnel4]
 
     router1.mainTunnel = tunnel1
     router1.backupTunnel = tunnel2
@@ -160,23 +160,23 @@ def main():
         while True:
             #Name of the GRE tunnel
 
-            tunnel = allTunnels[turn].get_name()
+            tunnel = tunnels[turn].get_name()
 
             if not re.match("^[A-Za-z0-9_-]*$", tunnel):
                 print("This input can only contains capital and small letters, numbers, underscore and dashes.")
                 again = True
             
-            if tunnel in allTunnels :
+            if tunnel in tunnels :
                 print('This tunnel name has already been entered.') 
                 again = True
 
             if not again:
-                allTunnels.append(tunnel)
+                tunnels.append(tunnel)
                 break
 
 
         while True:
-            mtu = allTunnels[turn].get_mtu()
+            mtu = tunnels[turn].get_mtu()
             again = validate_positive_integer(mtu)
 
             if not again:
@@ -187,7 +187,7 @@ def main():
 
 
         while True:
-            keepAliveTimeOut = allTunnels[turn].get_keepAliveTimeOut()
+            keepAliveTimeOut = tunnels[turn].get_keepAliveTimeOut()
 
             again = validate_positive_integer(keepAliveTimeOut)
 
@@ -199,7 +199,7 @@ def main():
 
 
         while True: 
-            keepAliveRetries = allTunnels[turn].get_keepAliveRetries()
+            keepAliveRetries = tunnels[turn].get_keepAliveRetries()
 
             again = validate_positive_integer(keepAliveRetries)
 
@@ -218,9 +218,9 @@ def main():
                 again = False
 
                 if routerTurn == 0:
-                    privateIPMask = allTunnels[turn].get_privateIP('left')
+                    privateIPMask = tunnels[turn].get_privateIP('left')
                 else:
-                    privateIPMask = allTunnels[turn].get_privateIP('right')
+                    privateIPMask = tunnels[turn].get_privateIP('right')
 
                 #Validate the format of the private
                 #again = validate_IP(privateIPMask, True)
@@ -248,6 +248,9 @@ def main():
             routers[turn].mainGRERoute = add_route(routers[0].outsidePublicIP, routers[turn].operatingSystem, routers[turn].mainTunnel.leftPrivateIP)
             routers[turn].backupGRERoute = add_route(routers[2].outsidePublicIP, routers[turn].operatingSystem, routers[turn].backupTunnel.leftPrivateIP, '5')   
 
+    typeTunnel = input("gre (1) or ipsec (2)")
+    for turn in range(4):
+        tunnels[turn].typeTunnel = typeTunnel
 
     configs = []
 

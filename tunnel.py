@@ -22,6 +22,7 @@ class Tunnel:
         self.keepAlive = ""
         self.keepAliveTimeOut = ""
         self.keepAliveRetries = ""
+        self.typeTunnel = ""
 
     def get_name(self):
         """Asks the user about the name of a specific tunnel and saves the value.
