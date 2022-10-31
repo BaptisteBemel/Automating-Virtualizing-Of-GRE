@@ -12,6 +12,7 @@ class Router:
         """
 
         self.position = position
+        self.mgmtPublicIP = ""
         self.insidePublicIP = ""
         self.outsidePublicIP = ""
         self.operatingSystem = ""
@@ -26,6 +27,17 @@ class Router:
         self.password = ""
         self.enable = ""
         self.config = ""
+
+    def get_mgmtPublicIP(self):
+        """Asks the user about the management IP address and its mask for a specific router and saves the value.
+
+        Returns:
+            string: Management IP address IP/Mask entered by the user.
+        """
+
+        self.mgmtPublicIP = input(
+            "Enter the management IP/mask of the " + self.position + " router: ")
+        return self.mgmtPublicIP
 
     def get_insidePublicIP(self):
         """Asks the user about the inside public address and its mask for a specific router and saves the value.

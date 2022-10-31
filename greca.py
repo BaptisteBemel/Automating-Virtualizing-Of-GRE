@@ -18,6 +18,39 @@ def main():
 
     routers = [router1, router2, router3, router4]
     for turn in range(4):
+        #Management IP of the routers
+        while True:
+            again = False
+
+            mgmtIPMask = routers[turn].get_mgmtPublicIP()
+
+            #Validate the format of the management IP
+            #again = validate_IP(mgmtIPMask)
+
+            if mgmtIPMask in allIP:
+                print('This IP has already been entered.') 
+                again = True
+
+            if not again:
+                pass
+                #again = ping(mgmtIPMask)
+
+            if not again:
+                allIP.append(mgmtIPMask)
+                break
+
+        #OS of the routers
+        while True:
+            again = False
+  
+            OS = routers[turn].get_OS() 
+
+            #Validate the format of the public IP
+            again = validate_OS(OS)
+
+            if not again:
+                break
+
         #Public IP of the routers
         while True:
             again = False
@@ -37,19 +70,6 @@ def main():
 
             if not again:
                 allIP.append(publicIPMask)
-                break
-
-
-        #OS of the routers
-        while True:
-            again = False
-  
-            OS = routers[turn].get_OS() 
-
-            #Validate the format of the public IP
-            again = validate_OS(OS)
-
-            if not again:
                 break
 
 
@@ -99,15 +119,27 @@ def main():
         if OS == '1':
             while True:
                 again = False
-    
-                enable = routers[turn].get_enable() 
 
-                if not re.match("^[A-Za-z0-9_-]*$", enable):
-                    print("This input can only contains capital and small letters, numbers, underscore and dashes.")
+                enableConfigured = input("Does the router have an enable secret password ? ('yes'/'no'): ")
+
+                if enableConfigured == "yes":
+                    while True:
+                        again = False
+            
+                        enable = routers[turn].get_enable() 
+
+                        if not re.match("^[A-Za-z0-9_-]*$", enable):
+                            print("This input can only contains capital and small letters, numbers, underscore and dashes.")
+                            again = True
+
+                        if not again:
+                            break
+
+                elif enableConfigured != "no":
                     again = True
 
                 if not again:
-                    break
+                        break
     
 
     #Adding routes
@@ -138,10 +170,26 @@ def main():
 
 
     #Tunnels, private IPs, keep-alive
-    tunnel1 = Tunnel('main', router1, 'main', router2)
-    tunnel2 = Tunnel('backup', router1, 'main', router4)
-    tunnel3 = Tunnel('main', router3, 'backup', router2)
-    tunnel4 = Tunnel('backup', router3, 'backup', router4)
+    while True:
+                again = False
+
+                enableIpsec = input("Do you want to configure IPsec over GRE ? ('yes'/'no'): ")
+
+                if enableIpsec == "yes":
+                    pass
+                elif enableConfigured == "no":
+                    pass
+                else:
+                    again = True
+
+                if not again:
+                        break
+
+    tunnel1 = Tunnel('main', router1, 'main', router2, "1")
+    tunnel2 = Tunnel('backup', router1, 'main', router4, "2")
+    tunnel3 = Tunnel('main', router3, 'backup', router2, "3")
+    tunnel4 = Tunnel('backup', router3, 'backup', router4, "4")
+    
 
     tunnels = [tunnel1, tunnel2, tunnel3, tunnel4]
 
@@ -162,8 +210,8 @@ def main():
 
             tunnel = tunnels[turn].get_name()
 
-            if not re.match("^[A-Za-z0-9_-]*$", tunnel):
-                print("This input can only contains capital and small letters, numbers, underscore and dashes.")
+            if not re.match("^[0-9]*$", tunnel):
+                print("This input can only contains numbers. The output name will be that number for Cisco tunnels and 'tun'+Number for VyOS and Mikrotik.")
                 again = True
             
             if tunnel in tunnels :
@@ -248,14 +296,15 @@ def main():
             routers[turn].mainGRERoute = add_route(routers[0].outsidePublicIP, routers[turn].operatingSystem, routers[turn].mainTunnel.leftPrivateIP)
             routers[turn].backupGRERoute = add_route(routers[2].outsidePublicIP, routers[turn].operatingSystem, routers[turn].backupTunnel.leftPrivateIP, '5')   
 
-    typeTunnel = input("gre (1) or ipsec (2)")
-    for turn in range(4):
-        tunnels[turn].typeTunnel = typeTunnel
+    
+    if enableIpsec:
+        pass
+
 
     configs = []
 
     for turn in range(4):
-        routers[turn].config = get_config(routers, turn + 1)
+        routers[turn].config = get_config(routers, turn + 1, enableIpsec)
         configs.append([routers[turn], routers[turn].config])  
 
     #The software shall be used onto linux OS. If another OS is used, change the command below to clear the terminal
@@ -269,14 +318,14 @@ def main():
     while True:
             again = False
   
-            confirm = input("Do you confirm the configurations ? (yes/no): ")
+            confirm = input("Do you confirm the configurations ? ('yes'/'no'): ")
 
             if confirm == "yes":
                 push_config(configs)
             elif confirm == "no":
                 while True:
                     sureAgain = False
-                    sure = input("Are you sure you want to cancel the configuration ? (yes/no): ")
+                    sure = input("Are you sure you want to cancel the configuration ? ('yes'/'no'): ")
 
                     if sure == "yes":
                         pass
@@ -471,7 +520,7 @@ def add_route(targetIPMask, mainLeftOS, nextHop, distance='0'):
 
     #CSR
     if mainLeftOS == '1':
-        new_route = 'ip route ' + targetNetwork + ' ' + targetMask + ' ' + nextHop + ' ' + distance
+        new_route = 'ip route ' + targetNetwork + ' ' + targetMask + ' ' + nextHop.split('/')[0] + ' ' + distance
 
     #VyOS
     elif mainLeftOS == '2':
@@ -504,7 +553,7 @@ def validate_positive_integer(stringNumber):
     
 
 
-def get_config(routers, router):
+def get_config(routers, router, enableIpsec):
     """After all the values for the configuration have been entered, this function is called to produce the configuration of the 4 routers.
 
     Args:
@@ -546,6 +595,7 @@ def get_config(routers, router):
 
     #CSR
     if routers[selector].operatingSystem == '1':
+        #GRE
         config = [
             'configure terminal', routers[selector].mainRoute, 
             routers[selector].backupRoute, routers[selector].mainGRERoute,
@@ -563,32 +613,47 @@ def get_config(routers, router):
             'ip address ' + backupPrivateIP.split('/')[0] + ' 255.255.255.252',
             'tunnel source ' + routers[selector].insidePublicIP.split('/')[0], 
             'tunnel destination ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
-            'keepalive ' + routers[selector].backupTunnel.keepAlive,
-            'wr'
+            'keepalive ' + routers[selector].backupTunnel.keepAlive
             ]
+
+        #IPsec
+        if enableIpsec:
+            #add IPsec
+            pass
+
+        config.append('end')
+        config.append('wr')
 
     #VyOS
     elif routers[selector].operatingSystem == '2':
+        #GRE
         config = [
             'configure', routers[selector].mainRoute, routers[selector].backupRoute,
             routers[selector].mainGRERoute, routers[selector].backupGRERoute,
-            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' address ' + mainPrivateIP,
-            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' encapsulation gre',
-            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' mtu ' + routers[selector].mainTunnel.mtu,
+            'set interfaces tunnel tun' + routers[selector].mainTunnel.name + ' address ' + mainPrivateIP,
+            'set interfaces tunnel tun' + routers[selector].mainTunnel.name + ' encapsulation gre',
+            'set interfaces tunnel tun' + routers[selector].mainTunnel.name + ' mtu ' + routers[selector].mainTunnel.mtu,
             'set firewall options ' + routers[selector].mainTunnel.name + ' adjust-mss ' + routers[selector].mainTunnel.mss,
-            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' local-ip ' + routers[selector].insidePublicIP.split('/')[0],
-            'set interfaces tunnel ' + routers[selector].mainTunnel.name + ' remote-ip ' + routers[otherRouter].insidePublicIP.split('/')[0],
-            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' address ' + backupPrivateIP,
-            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' encapsulation gre',
-            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' mtu ' + routers[selector].backupTunnel.mtu,
+            'set interfaces tunnel tun' + routers[selector].mainTunnel.name + ' local-ip ' + routers[selector].insidePublicIP.split('/')[0],
+            'set interfaces tunnel tun' + routers[selector].mainTunnel.name + ' remote-ip ' + routers[otherRouter].insidePublicIP.split('/')[0],
+            'set interfaces tunnel tun' + routers[selector].backupTunnel.name + ' address ' + backupPrivateIP,
+            'set interfaces tunnel tun' + routers[selector].backupTunnel.name + ' encapsulation gre',
+            'set interfaces tunnel tun' + routers[selector].backupTunnel.name + ' mtu ' + routers[selector].backupTunnel.mtu,
             'set firewall options ' + routers[selector].backupTunnel.name + ' adjust-mss ' + routers[selector].backupTunnel.mss,
-            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' local-ip ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
-            'set interfaces tunnel ' + routers[selector].backupTunnel.name + ' remote-ip ' + routers[selector].backupTunnel.keepAlive,
-            'commit', 'save'
-            ]       
+            'set interfaces tunnel tun' + routers[selector].backupTunnel.name + ' local-ip ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
+            'set interfaces tunnel tun' + routers[selector].backupTunnel.name + ' remote-ip ' + routers[selector].backupTunnel.keepAlive,
+            ]
+        #IPsec
+        if enableIpsec:
+            #add IPsec
+            pass
+
+        config.append('commit')
+        config.append('save')    
 
     #Mikrotik
     elif routers[selector].operatingSystem == '3':
+        #GRE
         config = [
             routers[selector].mainRoute, routers[selector].backupRoute,
             routers[selector].mainGRERoute, routers[selector].backupGRERoute,
@@ -601,7 +666,10 @@ def get_config(routers, router):
             '/ip firewall mangle add out-interface=' + routers[selector].backupTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].backupTunnel.mss + ' chain=forward tcp-mss=' + str(int(routers[selector].backupTunnel.mss) + 1) +'-65535',
             '/ip address  add address=' + backupPrivateIP + ' interface=' + routers[selector].backupTunnel.name
         ]
-            
+        #IPsec
+        if enableIpsec:
+            #add IPsec
+            pass            
 
     return config
 
@@ -689,7 +757,7 @@ def push_config(configs):
     for config in range(len(configs)):
         if configs[config][0].operatingSystem == '1':
             device = {
-            'ip': configs[config][0].insidePublicIP.split('/')[0],
+            'ip': configs[config][0].mgmtPublicIP.split('/')[0],
             'device_type': "cisco_ios",
             'username': configs[config][0].username,
             'password': configs[config][0].password,
@@ -697,14 +765,14 @@ def push_config(configs):
         }
         elif configs[config][0].operatingSystem == '2':
             device = {
-            'ip': configs[config][0].insidePublicIP.split('/')[0],
+            'ip': configs[config][0].mgmtPublicIP.split('/')[0],
             'device_type': "vyos",
             'username': configs[config][0].username,
             'password': configs[config][0].password,
         }
         else:
             device = {
-            'ip': configs[config][0].insidePublicIP.split('/')[0],
+            'ip': configs[config][0].mgmtPublicIP.split('/')[0],
             'device_type': "mikrotik_routeros",
             'username': configs[config][0].username,
             'password': configs[config][0].password,

@@ -1,6 +1,6 @@
 class Tunnel:
 
-    def __init__(self, leftPosition, leftRouter, rightPosition, rightRouter):
+    def __init__(self, leftPosition, leftRouter, rightPosition, rightRouter, tunnelId):
         """Generates the tunnel's value.
 
         Args:
@@ -10,10 +10,12 @@ class Tunnel:
             rightRouter (Router): Router object of the right router
         """
 
+        #GRE values
         self.leftPosition = leftPosition
         self.rightPosition = rightPosition
         self.leftRouter = leftRouter
         self.rightRouter = rightRouter
+        self.tunnelId = tunnelId
         self.name = ""
         self.mtu = ""
         self.mss = ""
@@ -22,16 +24,30 @@ class Tunnel:
         self.keepAlive = ""
         self.keepAliveTimeOut = ""
         self.keepAliveRetries = ""
-        self.typeTunnel = ""
+
+        #IPsec values
+        #Global value
+        self.keyName = ""
+        #Cisco values
+        self.setName = ""
+        self.mapName = ""
+        self.insideInterface = ""
+        #VyOS values
+        self.ikeName = ""
+        self.espName = ""
+
 
     def get_name(self):
         """Asks the user about the name of a specific tunnel and saves the value.
+
+            Cisco only accept a number as the tunnel name where the other can have a name with letters and numbers so, only a number can be entered and for VyOS or Mikrotik this number will
+            be concanate 'tun'+Number during the generation of the configuration.
 
         Returns:
             string: Name entered by the user.
         """
 
-        self.name = input("Enter the name of the " + self.leftPosition + " tunnel for the " + self.rightPosition + " left router: ")
+        self.name = input("Enter the name of the " + self.leftPosition + " tunnel for the " + self.rightPosition + " left router (Only use figures - Default value:" + self.tunnelId + "): ")
         return self.name
 
     def get_mtu(self):
@@ -85,3 +101,27 @@ class Tunnel:
         else:
             self.rightPrivateIP = input("Enter the private IP/mask of the right router for \'" + self.name + "\' : ")
             return self.rightPrivateIP
+
+    def get_keyName(self):
+        self.keyName = input("")
+        return self.keyName
+
+    def get_setName(self):
+        self.setName = input("")
+        return self.setName
+    
+    def get_mapName(self):
+        self.mapName = input("")
+        return self.mapName
+
+    def get_insideInterface(self):
+        self.insideInterface = input("")
+        return self.insideInterface
+    
+    def get_ikeName(self):
+        self.ikeName = input("")
+        return self.ikeName
+    
+    def get_espName(self):
+        self.espName = input("")
+        return self.espName

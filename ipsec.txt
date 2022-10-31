@@ -1,0 +1,71 @@
+cisco:
+
+crypto isakmp policy 10
+encryption aes 256
+hash sha256
+authentication pre-share
+group 21
+
+crypto isakmp key [keyName] address [otherIP]
+
+crypto ipsec transform-set [setName] esp-aes esp-sha256-hmac
+
+access-list 100 permit ip [réseauNMS] [0.0.0.255] [réseauHUB] [0.0.0.255]
+
+crypto map [mapName] 10 ipsec-isakmp
+ set peer [otherIP]
+ set transform-set [setName]
+ match address 100
+
+interface [int vers internet]
+ crypto map [mapName]
+ 
+
+
+vyos:
+
+set interfaces tunnel [tunnelName] encapsulation gre
+set interfaces tunnel [tunnelName] source-address [localIP]
+set interfaces tunnel [tunnelName] remote [otherIP]
+set interfaces tunnel [tunnelName] address [privateIP]/30
+
+set vpn ipsec ipsec-interfaces interface eth0
+
+set vpn ipsec ike-group [ikeName] proposal 1 dh-group '21'
+set vpn ipsec ike-group [ikeName] proposal 1 encryption 'aes256'
+set vpn ipsec ike-group [ikeName] proposal 1 hash 'sha256'
+
+set vpn ipsec esp-group [espName] proposal 1 encryption 'aes256'
+set vpn ipsec esp-group [espName] proposal 1 hash 'sha256'
+
+set vpn ipsec site-to-site peer [otherIP] authentication mode pre-shared-secret
+set vpn ipsec site-to-site peer [otherIP] authentication pre-shared-secret [keyName]
+
+set vpn ipsec site-to-site peer [otherIP] ike-group [ikeName]
+set vpn ipsec site-to-site peer [otherIP] default-esp-group [espName]
+
+set vpn ipsec site-to-site peer [otherIP] local-address 192.0.2.10
+
+set vpn ipsec site-to-site peer [otherIP] tunnel 1 protocol gre
+
+
+
+
+
+mikrotik:
+
+/ip ipsec profile
+add dh-group=ecp521 enc-algorithm=aes-256 name=[name]
+/ip ipsec proposal
+add enc-algorithms=aes-256-cbc name=[name] pfs-group=modp2048
+
+/ip ipsec peer
+add address=[otherIP]/32 name=[name] profile=[name]
+
+/ip ipsec identity
+add peer=[name] secret=[keyName]
+
+/ip ipsec policy
+add src-address=[network] src-port=any dst-address=[otherNetwork] dst-port=any \
+tunnel=yes action=encrypt proposal=[name] peer=[name]
+NAT and Fasttrack Bypass!!!
