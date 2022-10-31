@@ -1,4 +1,5 @@
 """Dummy information:
+gre:
 
 192.168.51.37/24
 1
@@ -58,7 +59,17 @@ no
 192.168.104.2/30
 
 
+gre+ipsec:
 
 
-Remove dummy information:"""
+
+
+Remove dummy information:
+gre:
+
+
+
+gre+ipsec:
+
+"""
 

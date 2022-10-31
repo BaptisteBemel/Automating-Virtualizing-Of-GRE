@@ -1,6 +1,7 @@
 # Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL
 from posixpath import split
 import re
+from this import s
 import netmiko
 import subprocess
 from router import Router
@@ -287,8 +288,9 @@ def main():
                     else:
                         print("The subnet mask for a tunnel has to be /30.") 
 
-    for turn in range(4):
 
+    #Routes to reach the end network via the tunnels
+    for turn in range(4):
         if turn % 2 == 0:
             routers[turn].mainGRERoute = add_route(routers[1].outsidePublicIP, routers[turn].operatingSystem, routers[turn].mainTunnel.rightPrivateIP)
             routers[turn].backupGRERoute = add_route(routers[3].outsidePublicIP, routers[turn].operatingSystem, routers[turn].backupTunnel.rightPrivateIP, '5')
@@ -297,8 +299,47 @@ def main():
             routers[turn].backupGRERoute = add_route(routers[2].outsidePublicIP, routers[turn].operatingSystem, routers[turn].backupTunnel.leftPrivateIP, '5')   
 
     
+    #Collects information for IPsec if it's enabled
     if enableIpsec:
-        pass
+        for turn in range(4):
+            key = ""
+            if tunnels[turn].leftRouter.operatingSystem == "1":
+                tunnels[turn].get_key()
+                tunnels[turn].get_setName()
+                tunnels[turn].get_mapName()
+                tunnels[turn].get_insideInterface("left")
+
+
+            elif tunnels[turn].rightRouter.operatingSystem == "1":
+                if tunnels[turn].leftRouter.operatingSystem != "1":
+                    tunnels[turn].get_key()
+                    tunnels[turn].get_setName()
+                    tunnels[turn].get_mapName()
+                    tunnels[turn].get_insideInterface("right")
+                else:
+                    tunnels[turn].get_insideInterface("right")
+
+            elif tunnels[turn].leftRouter.operatingSystem == "2":
+                if key == "":
+                    tunnels[turn].get_key()
+                tunnels[turn].get_ikeName()
+                tunnels[turn].get_espName()
+
+            elif tunnels[turn].rightRouter.operatingSystem == "2":
+                if key == "":
+                    tunnels[turn].get_key()
+                if tunnels[turn].leftRouter.operatingSystem != "2":
+                    tunnels[turn].get_setName()
+                    tunnels[turn].get_mapName()
+                    tunnels[turn].get_insideInterface("right")
+                else:
+                    tunnels[turn].get_insideInterface("right")
+
+            elif tunnels[turn].leftRouter.operatingSystem == "3" or tunnels[turn].rightRouter.operatingSystem == "3":
+                if key == "":
+                    tunnels[turn].get_key()
+                tunnels[turn].get_groupName()
+
 
 
     configs = []
@@ -477,44 +518,8 @@ def add_route(targetIPMask, mainLeftOS, nextHop, distance='0'):
         string: String that adds a route
     """
 
-    #Translation from /subnet_mask to a classic subnet mask
-    traduction_subnet_mask = {
-        '1': '128.0.0.0',
-        '2': '192.0.0.0',
-        '3': '224.0.0.0',
-        '4': '224.0.0.0',
-        '5': '248.0.0.0',
-        '6': '252.0.0.0',
-        '7': '254.0.0.0',
-        '8': '255.0.0.0',
-        '9': '255.128.0.0',
-        '10': '255.192.0.0',
-        '11': '255.224.0.0',
-        '12': '255.240.0.0',
-        '13': '255.248.0.0',
-        '14': '255.252.0.0',
-        '15': '255.254.0.0',
-        '16': '255.255.0.0',
-        '17': '255.255.128.0',
-        '18': '255.255.192.0',
-        '19': '255.255.224.0',
-        '20': '255.255.240.0',
-        '21': '255.255.248.0',
-        '22': '255.255.252.0',
-        '23': '255.255.254.0',
-        '24': '255.255.255.0',
-        '25': '255.255.255.128',
-        '26': '255.255.255.192',
-        '27': '255.255.255.224',
-        '28': '255.255.255.240',
-        '29': '255.255.255.248',
-        '30': '255.255.255.252',
-        '31': '255.255.255.254',
-        '32': '255.255.255.255',
-    }
-
     targetNetwork = get_network(targetIPMask)
-    targetMask = traduction_subnet_mask[targetIPMask.split('/')[1]]
+    targetMask = get_full_mask(targetIPMask.split('/')[1], False)
     targetNetworkMask = targetNetwork + '/' + targetIPMask.split('/')[1]
     
 
@@ -618,11 +623,43 @@ def get_config(routers, router, enableIpsec):
 
         #IPsec
         if enableIpsec:
-            #add IPsec
-            pass
+            interface1 = ""
+            interface2 = ""
+            if routers[selector].position == routers[selector].mainTunnel.leftRouter.position:
+                interface1 = routers[selector].mainTunnel.leftInsideInterface1
+                interface2 = routers[selector].mainTunnel.leftInsideInterface2
+            else:
+                interface1 = routers[selector].mainTunnel.rightInsideInterface1
+                interface2 = routers[selector].mainTunnel.rightInsideInterface2
 
-        config.append('end')
-        config.append('wr')
+            ipsecConfig = [
+                'exit', 'crypto iskmp policy 10', 'encryption aes 256',
+                'hash sha256', 'authentication pre-share', 'group 21',
+                'crypto isakmp key ' + routers[selector].mainTunnel.key + ' address ' + routers[otherRouter].insidePublicIP.split('/')[0],
+                'crypto ipsec transform-set ' + routers[selector].mainTunnel.setName + 'esp-aes esp-sha256-hmac',
+                'access-list 100 permit ip ' + get_network(routers[otherRouter].outsidePublicIP) + ' ' 
+                + get_full_mask(routers[otherRouter].outsidePublicIP.split('/')[1]) 
+                + ' ' + get_network(routers[selector].outsidePublicIP) + ' ' + get_full_mask(routers[selector].outsidePublicIP.split('/')[1]),
+                'crypto map ' + routers[selector].mainTunnel.mapName + ' 10 ipsec-isakmp',
+                'set peer ' + routers[otherRouter].insidePublicIP.split('/')[0],
+                'set transform-set ' + routers[selector].mainTunnel.setName,
+                'match address 100', 'interface ' + interface1, 'crypto map ' + routers[selector].mainTunnel.mapName,
+                'exit', 'crypto iskmp policy 10', 'encryption aes 256',
+                'hash sha256', 'authentication pre-share', 'group 21',
+                'crypto isakmp key ' + routers[selector].backupTunnel.key + ' address ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
+                'crypto ipsec transform-set ' + routers[selector].backupTunnel.setName + 'esp-aes esp-sha256-hmac',
+                'access-list 100 permit ip ' + get_network(routers[otherBackupRouter].outsidePublicIP) + ' ' 
+                + get_full_mask(routers[otherBackupRouter].outsidePublicIP.split('/')[1]) 
+                + ' ' + get_network(routers[selector].outsidePublicIP) + ' ' + get_full_mask(routers[selector].outsidePublicIP.split('/')[1]),
+                'crypto map ' + routers[selector].backupTunnel.mapName + ' 10 ipsec-isakmp',
+                'set peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
+                'set transform-set ' + routers[selector].backupTunnel.setName,
+                'match address 100', 'interface ' + interface2, 'crypto map ' + routers[selector].backupTunnel.mapName
+            ]
+
+            config += ipsecConfig
+
+        config += ['end','wr']
 
     #VyOS
     elif routers[selector].operatingSystem == '2':
@@ -645,11 +682,45 @@ def get_config(routers, router, enableIpsec):
             ]
         #IPsec
         if enableIpsec:
-            #add IPsec
-            pass
+            interface1 = ""
+            interface2 = ""
+            if routers[selector].position == routers[selector].mainTunnel.leftRouter.position:
+                interface1 = routers[selector].mainTunnel.leftInsideInterface1
+                interface2 = routers[selector].mainTunnel.leftInsideInterface2
+            else:
+                interface1 = routers[selector].mainTunnel.rightInsideInterface1
+                interface2 = routers[selector].mainTunnel.rightInsideInterface2
 
-        config.append('commit')
-        config.append('save')    
+            ipsecConfig = [
+                'set vpn ipsec ipsec-interfaces interface ' + interface1,
+                'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 dh-group "21"',
+                'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 encryption "aes256"',
+                'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 hash "sha256"',
+                'set vpn ipsec esp-group ' + routers[selector].mainTunnel.espName + ' proposal 1 encryption "aes256"',
+                'set vpn ipsec esp-group ' + routers[selector].mainTunnel.espName + ' proposal 1 hash "sha256"',
+                'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' authentication mode pre-shared-secret',
+                'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' authentication pre-shared-secret ' + routers[selector].mainTunnel.key,
+                'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' ike-group ' + routers[selector].mainTunnel.ikeName,
+                'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' default-esp-group ' + routers[selector].mainTunnel.espName,
+                'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address ' + routers[selector].insidePublicIP.split('/')[0],
+                'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' tunnel 1 protocol gre',
+                'set vpn ipsec ipsec-interfaces interface ' + interface2,
+                'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 dh-group "21"',
+                'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 encryption "aes256"',
+                'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 hash "sha256"',
+                'set vpn ipsec esp-group ' + routers[selector].backupTunnel.espName + ' proposal 1 encryption "aes256"',
+                'set vpn ipsec esp-group ' + routers[selector].backupTunnel.espName + ' proposal 1 hash "sha256"',
+                'set vpn ipsec site-to-site peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' authentication mode pre-shared-secret',
+                'set vpn ipsec site-to-site peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' authentication pre-shared-secret ' + routers[selector].backupTunnel.key,
+                'set vpn ipsec site-to-site peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' ike-group ' + routers[selector].backupTunnel.ikeName,
+                'set vpn ipsec site-to-site peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' default-esp-group ' + routers[selector].backupTunnel.espName,
+                'set vpn ipsec site-to-site peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' local-address ' + routers[selector].insidePublicIP.split('/')[0],
+                'set vpn ipsec site-to-site peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' tunnel 1 protocol gre'
+            ]
+
+            config += ipsecConfig
+
+        config += ['commit','save']
 
     #Mikrotik
     elif routers[selector].operatingSystem == '3':
@@ -668,8 +739,32 @@ def get_config(routers, router, enableIpsec):
         ]
         #IPsec
         if enableIpsec:
-            #add IPsec
-            pass            
+            ipsecConfig = [
+                '/ip ipsec profile add dh-group=ecp521 enc-algorithm=aes-256 name=' + routers[selector].mainTunnel.groupName,
+                '/ip ipsec proposal add enc-algorithms=aes-256-cbc name=' + routers[selector].mainTunnel.groupName + ' pfs-group=modp2048',
+                '/ip ipsec peer add address=' + routers[otherRouter].insidePublicIP.split('/')[0] + '/32 name=' + routers[selector].mainTunnel.groupName + ' profile=' + routers[selector].mainTunnel.groupName,
+                '/ip ipsec identity add peer=' + routers[selector].mainTunnel.groupName + ' secret=' + routers[selector].mainTunnel.key,
+                '/ip ipsec policy add src-address=' + get_network(routers[selector].outsidePublicIP) + routers[selector].outsidePublicIP.split('/')[1] 
+                + ' src-port=any dst-address=' + get_network(routers[otherRouter].outsidePublicIP) + routers[otherRouter].outsidePublicIP.split('/')[1] 
+                + ' dst-port=any tunnel=yes action=encrypt proposal=' 
+                + routers[selector].mainTunnel.groupName + ' peer=' + routers[selector].mainTunnel.groupName,
+                '/ip firewall nat add chain=srcnat action=accept  place-before=0 src-address=' + get_network(routers[selector].outsidePublicIP) 
+                + routers[selector].outsidePublicIP.split('/')[1] 
+                + ' dst-address=' + get_network(routers[otherRouter].outsidePublicIP) + routers[otherRouter].outsidePublicIP.split('/')[1],
+                '/ip ipsec profile add dh-group=ecp521 enc-algorithm=aes-256 name=' + routers[selector].backupTunnel.groupName,
+                '/ip ipsec proposal add enc-algorithms=aes-256-cbc name=' + routers[selector].backupTunnel.groupName + ' pfs-group=modp2048',
+                '/ip ipsec peer add address=' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + '/32 name=' + routers[selector].backupTunnel.groupName + ' profile=' + routers[selector].mainTunnel.groupName,
+                '/ip ipsec identity add peer=' + routers[selector].backupTunnel.groupName + ' secret=' + routers[selector].backupTunnel.key,
+                '/ip ipsec policy add src-address=' + get_network(routers[selector].outsidePublicIP) + routers[selector].outsidePublicIP.split('/')[1] 
+                + ' src-port=any dst-address=' + get_network(routers[otherBackupRouter].outsidePublicIP) + routers[otherBackupRouter].outsidePublicIP.split('/')[1] 
+                + ' dst-port=any tunnel=yes action=encrypt proposal=' 
+                + routers[selector].backupTunnel.groupName + ' peer=' + routers[selector].backupTunnel.groupName,
+                '/ip firewall nat add chain=srcnat action=accept  place-before=0 src-address=' + get_network(routers[selector].outsidePublicIP) 
+                + routers[selector].outsidePublicIP.split('/')[1] 
+                + ' dst-address=' + get_network(routers[otherBackupRouter].outsidePublicIP) + routers[otherBackupRouter].outsidePublicIP.split('/')[1]
+            ]
+
+            config += ipsecConfig          
 
     return config
 
@@ -742,6 +837,64 @@ def get_network(IPMask):
     network = '.'.join(networkSplit)
 
     return network
+
+
+def get_full_mask(mask, inverted):
+    #Translation from /subnet_mask to a classic subnet mask
+    traduction_subnet_mask = {
+        '1': '128.0.0.0',
+        '2': '192.0.0.0',
+        '3': '224.0.0.0',
+        '4': '224.0.0.0',
+        '5': '248.0.0.0',
+        '6': '252.0.0.0',
+        '7': '254.0.0.0',
+        '8': '255.0.0.0',
+        '9': '255.128.0.0',
+        '10': '255.192.0.0',
+        '11': '255.224.0.0',
+        '12': '255.240.0.0',
+        '13': '255.248.0.0',
+        '14': '255.252.0.0',
+        '15': '255.254.0.0',
+        '16': '255.255.0.0',
+        '17': '255.255.128.0',
+        '18': '255.255.192.0',
+        '19': '255.255.224.0',
+        '20': '255.255.240.0',
+        '21': '255.255.248.0',
+        '22': '255.255.252.0',
+        '23': '255.255.254.0',
+        '24': '255.255.255.0',
+        '25': '255.255.255.128',
+        '26': '255.255.255.192',
+        '27': '255.255.255.224',
+        '28': '255.255.255.240',
+        '29': '255.255.255.248',
+        '30': '255.255.255.252',
+        '31': '255.255.255.254',
+        '32': '255.255.255.255',
+    }
+
+    if inverted:
+        mask = traduction_subnet_mask[mask]
+        classes = mask.split('.')
+        newMask = []
+
+        for classId in range(len(classes)):
+            classValue = int(classes[classId])
+            classValue = 255 - classValue
+            classValue = str(classValue)
+            newMask.append(classValue)
+        
+        mask = '.'.join(newMask)
+
+    else:
+        mask = traduction_subnet_mask[mask]
+
+    return mask
+
+
 
 
 def push_config(configs):

@@ -1,3 +1,6 @@
+from turtle import pos
+
+
 class Tunnel:
 
     def __init__(self, leftPosition, leftRouter, rightPosition, rightRouter, tunnelId):
@@ -27,14 +30,20 @@ class Tunnel:
 
         #IPsec values
         #Global value
-        self.keyName = ""
+        self.key = ""
         #Cisco values
         self.setName = ""
         self.mapName = ""
-        self.insideInterface = ""
         #VyOS values
         self.ikeName = ""
         self.espName = ""
+        #Cisco and VyOS
+        self.leftInsideInterface1 = ""
+        self.leftInsideInterface2 = ""
+        self.rightInsideInterface1 = ""
+        self.rightInsideInterface2 = ""
+        #Mikrotik
+        self.groupName = ""
 
 
     def get_name(self):
@@ -102,26 +111,69 @@ class Tunnel:
             self.rightPrivateIP = input("Enter the private IP/mask of the right router for \'" + self.name + "\' : ")
             return self.rightPrivateIP
 
-    def get_keyName(self):
-        self.keyName = input("")
-        return self.keyName
+    def get_key(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        self.key = input("")
+        return self.key
 
     def get_setName(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         self.setName = input("")
         return self.setName
     
     def get_mapName(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         self.mapName = input("")
         return self.mapName
 
-    def get_insideInterface(self):
-        self.insideInterface = input("")
-        return self.insideInterface
+    def get_insideInterface(self, position):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        if position == "left":
+            self.leftInsideInterface = input("")
+            return self.insideInterface
+        if position == "right":
+            self.rightInsideInterface = input("")
+            return self.insideInterface
     
     def get_ikeName(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         self.ikeName = input("")
         return self.ikeName
     
     def get_espName(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         self.espName = input("")
         return self.espName
+
+    def get_groupName(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        self.groupName = input("")
+        return self.groupName

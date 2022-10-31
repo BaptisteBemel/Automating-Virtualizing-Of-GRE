@@ -68,4 +68,7 @@ add peer=[name] secret=[keyName]
 /ip ipsec policy
 add src-address=[network] src-port=any dst-address=[otherNetwork] dst-port=any \
 tunnel=yes action=encrypt proposal=[name] peer=[name]
-NAT and Fasttrack Bypass!!!
+
+/ip firewall nat
+add chain=srcnat action=accept  place-before=0 \
+ src-address=[network] dst-address=[otherNetwork]
