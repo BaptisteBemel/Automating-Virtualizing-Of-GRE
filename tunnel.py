@@ -25,7 +25,7 @@ class Tunnel:
         self.leftPrivateIP = ""
         self.rightPrivateIP = ""
         self.keepAlive = ""
-        self.keepAliveTimeOut = ""
+        self.keepAliveFrequency = ""
         self.keepAliveRetries = ""
 
         #IPsec values
@@ -73,15 +73,15 @@ class Tunnel:
             pass
         return self.mtu
 
-    def get_keepAliveTimeOut(self):
+    def get_keepAliveFrequency(self):
         """Asks the user about the time-out for the keep alive of a specific tunnel and saves the value.
 
         Returns:
             string: Keep alive time-out entered by the user.
         """
 
-        self.keepAliveTimeOut = input("Enter the number of seconds for the keep-alive for this tunnel (default time: 5(seconds)): ")
-        return self.keepAliveTimeOut
+        self.keepAliveFrequency = input("Enter the number of seconds for the keep-alive for this tunnel (default time: 5(seconds)): ")
+        return self.keepAliveFrequency
 
     def get_keepAliveRetries(self):
         """Asks the user about the number of retries for the keep alive of a specific tunnel and saves the value.
@@ -91,7 +91,7 @@ class Tunnel:
         """
 
         self.keepAliveRetries = input("Enter the number of retries for this tunnel (default number: 4): ")
-        self.keepAlive = self.keepAliveTimeOut + ' ' + self.keepAliveRetries
+        self.keepAlive = self.keepAliveFrequency + ' ' + self.keepAliveRetries
         return self.keepAliveRetries
 
     def get_privateIP(self, selector):
@@ -117,7 +117,7 @@ class Tunnel:
         Returns:
             _type_: _description_
         """
-        self.key = input("")
+        self.key = input("Enter the secret key for the encryption (Criteria - At least: Min length: 8chars, Capital, small caps, a figure and a special char): ")
         return self.key
 
     def get_setName(self):
@@ -126,7 +126,7 @@ class Tunnel:
         Returns:
             _type_: _description_
         """
-        self.setName = input("")
+        self.setName = input("Enter the name of the set: ")
         return self.setName
     
     def get_mapName(self):
@@ -135,21 +135,8 @@ class Tunnel:
         Returns:
             _type_: _description_
         """
-        self.mapName = input("")
+        self.mapName = input("Enter the name of the map: ")
         return self.mapName
-
-    def get_insideInterface(self, position):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
-        if position == "left":
-            self.leftInsideInterface = input("")
-            return self.insideInterface
-        if position == "right":
-            self.rightInsideInterface = input("")
-            return self.insideInterface
     
     def get_ikeName(self):
         """_summary_
@@ -157,7 +144,7 @@ class Tunnel:
         Returns:
             _type_: _description_
         """
-        self.ikeName = input("")
+        self.ikeName = input("Enter the name of the IKE group: ")
         return self.ikeName
     
     def get_espName(self):
@@ -166,7 +153,7 @@ class Tunnel:
         Returns:
             _type_: _description_
         """
-        self.espName = input("")
+        self.espName = input("Enter the name of the ESP group: ")
         return self.espName
 
     def get_groupName(self):
@@ -175,5 +162,5 @@ class Tunnel:
         Returns:
             _type_: _description_
         """
-        self.groupName = input("")
+        self.groupName = input("Enter the name that is going to be use for the IPsec on Mikrotik: ")
         return self.groupName

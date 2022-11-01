@@ -18,6 +18,7 @@ def main():
     router4 = Router('back-up right')
 
     routers = [router1, router2, router3, router4]
+
     for turn in range(4):
         #Management IP of the routers
         while True:
@@ -52,7 +53,7 @@ def main():
             if not again:
                 break
 
-        #Public IP of the routers
+        #Public inside IP of the routers
         while True:
             again = False
 
@@ -73,6 +74,21 @@ def main():
                 allIP.append(publicIPMask)
                 break
 
+        interfaces = []
+        #Inside interface
+        while True:
+            again = False
+
+            insideInterface = routers[turn].get_insideInterface()
+
+            if insideInterface in interfaces:
+                print('This interface has already been entered.') 
+                again = True
+
+            if not again:
+                interfaces.append(insideInterface)
+                break
+
 
         #Outside IP
         while True:
@@ -89,6 +105,82 @@ def main():
 
             if not again:
                 break
+
+        #Outside interface
+        while True:
+            again = False
+
+            outsideInterface = routers[turn].get_outsideInterface()
+
+            if outsideInterface in interfaces:
+                print('This interface has already been entered.') 
+                again = True
+
+            if not again:
+                interfaces.append(outsideInterface)
+                break
+        
+        #NAT information
+        if turn == 1:
+            while True:
+                again = False
+
+                poolName = routers[turn].get_poolName()
+
+                if not re.match("^[A-Za-z0-9_-]*$", poolName):
+                    print("This input can only contains capital and small letters, numbers, underscore and dashes.")
+                    again = True
+
+                if not again:
+                    break
+            
+            while True:
+                again = False
+
+                startPool = routers[turn].get_startPool()
+                #This fake subnet is only used for validation purpose but not saved
+                startPool += "/24"
+
+                if not re.match("[0-9.]*[0-9]+", startPool):
+                    print("This input can only contains figures and dots. It shall have this format 'x.x.x.x'")
+                    again = True
+
+                if not again:
+                    again = validate_IP(startPool, True)
+
+                if not again:
+                    break
+            
+            while True:
+                again = False
+
+                endPool = routers[turn].get_endPool()
+                #This fake subnet is only used for validation purpose but not saved
+                endPool += "/24"
+
+                if not re.match("[0-9.]*[0-9]+", startPool):
+                    print("This input can only contains figures and dots. It shall have this format 'x.x.x.x'")
+                    again = True
+
+                if not again:
+                    again = validate_IP(endPool, True)
+
+                if not again:
+                    break
+            
+            while True:
+                again = False
+
+                routers[turn].get_networkNat()
+
+                if not again:
+                    break
+
+            routers[3].poolName = routers[turn].poolName
+            routers[3].startPool = routers[turn].startPool
+            routers[3].endPool = routers[turn].endPool
+            routers[3].networkNat = routers[turn].networkNat
+
 
         #Username
         while True:
@@ -172,19 +264,19 @@ def main():
 
     #Tunnels, private IPs, keep-alive
     while True:
-                again = False
+        again = False
 
-                enableIpsec = input("Do you want to configure IPsec over GRE ? ('yes'/'no'): ")
+        enableIpsec = input("Do you want to configure IPsec over GRE ? ('yes'/'no'): ")
 
-                if enableIpsec == "yes":
-                    pass
-                elif enableConfigured == "no":
-                    pass
-                else:
-                    again = True
+        if enableIpsec == "yes":
+            enableIpsec = True
+        elif enableConfigured == "no":
+            enableIpsec = False
+        else:
+            again = True
 
-                if not again:
-                        break
+        if not again:
+                break
 
     tunnel1 = Tunnel('main', router1, 'main', router2, "1")
     tunnel2 = Tunnel('backup', router1, 'main', router4, "2")
@@ -212,7 +304,7 @@ def main():
             tunnel = tunnels[turn].get_name()
 
             if not re.match("^[0-9]*$", tunnel):
-                print("This input can only contains numbers. The output name will be that number for Cisco tunnels and 'tun'+Number for VyOS and Mikrotik.")
+                print("This input must be a number. The output name will be that number for Cisco tunnels and 'tun'+Number for VyOS and Mikrotik.")
                 again = True
             
             if tunnel in tunnels :
@@ -236,12 +328,12 @@ def main():
 
 
         while True:
-            keepAliveTimeOut = tunnels[turn].get_keepAliveTimeOut()
+            keepAliveFrequency = tunnels[turn].get_keepAliveFrequency()
 
-            again = validate_positive_integer(keepAliveTimeOut)
+            again = validate_positive_integer(keepAliveFrequency)
 
             if not again:
-                if int(keepAliveTimeOut) > 5:
+                if int(keepAliveFrequency) > 5:
                     print('This value is not correct. It cannot be above 5.')
                 else:
                     break
@@ -307,17 +399,12 @@ def main():
                 tunnels[turn].get_key()
                 tunnels[turn].get_setName()
                 tunnels[turn].get_mapName()
-                tunnels[turn].get_insideInterface("left")
 
 
-            elif tunnels[turn].rightRouter.operatingSystem == "1":
-                if tunnels[turn].leftRouter.operatingSystem != "1":
-                    tunnels[turn].get_key()
-                    tunnels[turn].get_setName()
-                    tunnels[turn].get_mapName()
-                    tunnels[turn].get_insideInterface("right")
-                else:
-                    tunnels[turn].get_insideInterface("right")
+            elif tunnels[turn].rightRouter.operatingSystem == "1" and tunnels[turn].leftRouter.operatingSystem != "1":
+                tunnels[turn].get_key()
+                tunnels[turn].get_setName()
+                tunnels[turn].get_mapName()
 
             elif tunnels[turn].leftRouter.operatingSystem == "2":
                 if key == "":
@@ -325,15 +412,11 @@ def main():
                 tunnels[turn].get_ikeName()
                 tunnels[turn].get_espName()
 
-            elif tunnels[turn].rightRouter.operatingSystem == "2":
+            elif tunnels[turn].rightRouter.operatingSystem == "2" and tunnels[turn].leftRouter.operatingSystem != "2":
                 if key == "":
                     tunnels[turn].get_key()
-                if tunnels[turn].leftRouter.operatingSystem != "2":
-                    tunnels[turn].get_setName()
-                    tunnels[turn].get_mapName()
-                    tunnels[turn].get_insideInterface("right")
-                else:
-                    tunnels[turn].get_insideInterface("right")
+                tunnels[turn].get_setName()
+                tunnels[turn].get_mapName()
 
             elif tunnels[turn].leftRouter.operatingSystem == "3" or tunnels[turn].rightRouter.operatingSystem == "3":
                 if key == "":
@@ -369,6 +452,7 @@ def main():
                     sure = input("Are you sure you want to cancel the configuration ? ('yes'/'no'): ")
 
                     if sure == "yes":
+                        print("The configuration has been cancelled.")
                         pass
                     elif sure == "no":
                         again = True
@@ -621,36 +705,40 @@ def get_config(routers, router, enableIpsec):
             'keepalive ' + routers[selector].backupTunnel.keepAlive
             ]
 
+        #NAT
+        if routers[selector].position == routers[selector].mainTunnel.rightRouter.position:
+            natConfig = [
+                'interface ' + routers[selector].outsideInterface,
+                'ip nat inside', 'exit' , 'interface ' + routers[selector].insideInterface,
+                'ip nat outside', 'exit',
+                'access-list 1 permit ' + routers[selector].networkNat.split('/')[0] + ' ' + get_full_mask(routers[selector].networkNat.split('/')[1], True),
+                'ip nat pool ' + routers[selector].poolName + ' ' + routers[selector].startPool + ' ' + routers[selector].endPool,
+                'ip nat inside source list 1 pool ' + routers[selector].poolName
+            ]
+
+            config += natConfig
+
         #IPsec
         if enableIpsec:
-            interface1 = ""
-            interface2 = ""
-            if routers[selector].position == routers[selector].mainTunnel.leftRouter.position:
-                interface1 = routers[selector].mainTunnel.leftInsideInterface1
-                interface2 = routers[selector].mainTunnel.leftInsideInterface2
-            else:
-                interface1 = routers[selector].mainTunnel.rightInsideInterface1
-                interface2 = routers[selector].mainTunnel.rightInsideInterface2
-
             ipsecConfig = [
-                'exit', 'crypto iskmp policy 10', 'encryption aes 256',
-                'hash sha256', 'authentication pre-share', 'group 21',
+                'exit', 'crypto iskmp policy 10', 'encryption aes 128',
+                'hash sha256', 'authentication pre-share', 'group 20',
                 'crypto isakmp key ' + routers[selector].mainTunnel.key + ' address ' + routers[otherRouter].insidePublicIP.split('/')[0],
                 'crypto ipsec transform-set ' + routers[selector].mainTunnel.setName + 'esp-aes esp-sha256-hmac',
                 'access-list 100 permit ip ' + get_network(routers[otherRouter].outsidePublicIP) + ' ' 
-                + get_full_mask(routers[otherRouter].outsidePublicIP.split('/')[1]) 
-                + ' ' + get_network(routers[selector].outsidePublicIP) + ' ' + get_full_mask(routers[selector].outsidePublicIP.split('/')[1]),
+                + get_full_mask(routers[otherRouter].outsidePublicIP.split('/')[1], True) 
+                + ' ' + get_network(routers[selector].outsidePublicIP) + ' ' + get_full_mask(routers[selector].outsidePublicIP.split('/')[1], True),
                 'crypto map ' + routers[selector].mainTunnel.mapName + ' 10 ipsec-isakmp',
                 'set peer ' + routers[otherRouter].insidePublicIP.split('/')[0],
                 'set transform-set ' + routers[selector].mainTunnel.setName,
                 'match address 100', 'interface ' + interface1, 'crypto map ' + routers[selector].mainTunnel.mapName,
-                'exit', 'crypto iskmp policy 10', 'encryption aes 256',
-                'hash sha256', 'authentication pre-share', 'group 21',
+                'exit', 'crypto iskmp policy 10', 'encryption aes 128',
+                'hash sha256', 'authentication pre-share', 'group 20',
                 'crypto isakmp key ' + routers[selector].backupTunnel.key + ' address ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
                 'crypto ipsec transform-set ' + routers[selector].backupTunnel.setName + 'esp-aes esp-sha256-hmac',
                 'access-list 100 permit ip ' + get_network(routers[otherBackupRouter].outsidePublicIP) + ' ' 
-                + get_full_mask(routers[otherBackupRouter].outsidePublicIP.split('/')[1]) 
-                + ' ' + get_network(routers[selector].outsidePublicIP) + ' ' + get_full_mask(routers[selector].outsidePublicIP.split('/')[1]),
+                + get_full_mask(routers[otherBackupRouter].outsidePublicIP.split('/')[1], True) 
+                + ' ' + get_network(routers[selector].outsidePublicIP) + ' ' + get_full_mask(routers[selector].outsidePublicIP.split('/')[1], True),
                 'crypto map ' + routers[selector].backupTunnel.mapName + ' 10 ipsec-isakmp',
                 'set peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
                 'set transform-set ' + routers[selector].backupTunnel.setName,
@@ -680,6 +768,17 @@ def get_config(routers, router, enableIpsec):
             'set interfaces tunnel tun' + routers[selector].backupTunnel.name + ' local-ip ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
             'set interfaces tunnel tun' + routers[selector].backupTunnel.name + ' remote-ip ' + routers[selector].backupTunnel.keepAlive,
             ]
+
+        #NAT
+        if routers[selector].position == routers[selector].mainTunnel.rightRouter.position:
+            natConfig = [
+                'set nat source rule 20 translation address 100.64.0.1',
+                'set nat source rule 30 translation address "masquerade"',
+                'set nat source rule 40 translation address 100.64.0.10-100.64.0.20'
+            ]
+
+            config += natConfig
+
         #IPsec
         if enableIpsec:
             interface1 = ""
@@ -693,10 +792,10 @@ def get_config(routers, router, enableIpsec):
 
             ipsecConfig = [
                 'set vpn ipsec ipsec-interfaces interface ' + interface1,
-                'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 dh-group "21"',
-                'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 encryption "aes256"',
+                'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 dh-group "20"',
+                'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 encryption "aes128"',
                 'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 hash "sha256"',
-                'set vpn ipsec esp-group ' + routers[selector].mainTunnel.espName + ' proposal 1 encryption "aes256"',
+                'set vpn ipsec esp-group ' + routers[selector].mainTunnel.espName + ' proposal 1 encryption "aes128"',
                 'set vpn ipsec esp-group ' + routers[selector].mainTunnel.espName + ' proposal 1 hash "sha256"',
                 'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' authentication mode pre-shared-secret',
                 'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' authentication pre-shared-secret ' + routers[selector].mainTunnel.key,
@@ -705,10 +804,10 @@ def get_config(routers, router, enableIpsec):
                 'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address ' + routers[selector].insidePublicIP.split('/')[0],
                 'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' tunnel 1 protocol gre',
                 'set vpn ipsec ipsec-interfaces interface ' + interface2,
-                'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 dh-group "21"',
-                'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 encryption "aes256"',
+                'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 dh-group "20"',
+                'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 encryption "aes128"',
                 'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 hash "sha256"',
-                'set vpn ipsec esp-group ' + routers[selector].backupTunnel.espName + ' proposal 1 encryption "aes256"',
+                'set vpn ipsec esp-group ' + routers[selector].backupTunnel.espName + ' proposal 1 encryption "aes128"',
                 'set vpn ipsec esp-group ' + routers[selector].backupTunnel.espName + ' proposal 1 hash "sha256"',
                 'set vpn ipsec site-to-site peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' authentication mode pre-shared-secret',
                 'set vpn ipsec site-to-site peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' authentication pre-shared-secret ' + routers[selector].backupTunnel.key,
@@ -737,11 +836,18 @@ def get_config(routers, router, enableIpsec):
             '/ip firewall mangle add out-interface=' + routers[selector].backupTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].backupTunnel.mss + ' chain=forward tcp-mss=' + str(int(routers[selector].backupTunnel.mss) + 1) +'-65535',
             '/ip address  add address=' + backupPrivateIP + ' interface=' + routers[selector].backupTunnel.name
         ]
+
+        #NAT
+        if routers[selector].position == routers[selector].mainTunnel.rightRouter.position:
+            natConfig = ['/ip firewall nat add chain=srcnat action=masquerade out-interface=Public']
+
+            config += natConfig
+
         #IPsec
         if enableIpsec:
             ipsecConfig = [
-                '/ip ipsec profile add dh-group=ecp521 enc-algorithm=aes-256 name=' + routers[selector].mainTunnel.groupName,
-                '/ip ipsec proposal add enc-algorithms=aes-256-cbc name=' + routers[selector].mainTunnel.groupName + ' pfs-group=modp2048',
+                '/ip ipsec profile add dh-group=ecp384 enc-algorithm=aes-128 name=' + routers[selector].mainTunnel.groupName,
+                '/ip ipsec proposal add enc-algorithms=aes-128-cbc name=' + routers[selector].mainTunnel.groupName + ' pfs-group=ecp384',
                 '/ip ipsec peer add address=' + routers[otherRouter].insidePublicIP.split('/')[0] + '/32 name=' + routers[selector].mainTunnel.groupName + ' profile=' + routers[selector].mainTunnel.groupName,
                 '/ip ipsec identity add peer=' + routers[selector].mainTunnel.groupName + ' secret=' + routers[selector].mainTunnel.key,
                 '/ip ipsec policy add src-address=' + get_network(routers[selector].outsidePublicIP) + routers[selector].outsidePublicIP.split('/')[1] 
@@ -751,8 +857,8 @@ def get_config(routers, router, enableIpsec):
                 '/ip firewall nat add chain=srcnat action=accept  place-before=0 src-address=' + get_network(routers[selector].outsidePublicIP) 
                 + routers[selector].outsidePublicIP.split('/')[1] 
                 + ' dst-address=' + get_network(routers[otherRouter].outsidePublicIP) + routers[otherRouter].outsidePublicIP.split('/')[1],
-                '/ip ipsec profile add dh-group=ecp521 enc-algorithm=aes-256 name=' + routers[selector].backupTunnel.groupName,
-                '/ip ipsec proposal add enc-algorithms=aes-256-cbc name=' + routers[selector].backupTunnel.groupName + ' pfs-group=modp2048',
+                '/ip ipsec profile add dh-group=ecp384 enc-algorithm=aes-128 name=' + routers[selector].backupTunnel.groupName,
+                '/ip ipsec proposal add enc-algorithms=aes-128-cbc name=' + routers[selector].backupTunnel.groupName + ' pfs-group=ecp384',
                 '/ip ipsec peer add address=' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + '/32 name=' + routers[selector].backupTunnel.groupName + ' profile=' + routers[selector].mainTunnel.groupName,
                 '/ip ipsec identity add peer=' + routers[selector].backupTunnel.groupName + ' secret=' + routers[selector].backupTunnel.key,
                 '/ip ipsec policy add src-address=' + get_network(routers[selector].outsidePublicIP) + routers[selector].outsidePublicIP.split('/')[1] 
@@ -921,14 +1027,14 @@ def push_config(configs):
             'ip': configs[config][0].mgmtPublicIP.split('/')[0],
             'device_type': "vyos",
             'username': configs[config][0].username,
-            'password': configs[config][0].password,
+            'password': configs[config][0].password
         }
         else:
             device = {
             'ip': configs[config][0].mgmtPublicIP.split('/')[0],
             'device_type': "mikrotik_routeros",
             'username': configs[config][0].username,
-            'password': configs[config][0].password,
+            'password': configs[config][0].password
         }
 
 
@@ -945,11 +1051,14 @@ def push_config(configs):
             #Closing of the connection
             connection.disconnect()
 
-            print('The configuration have been pushed.')
+            print('A configuration has been pushed.')
+
         except:
             #Unable to connect to the router
             print('The connection to the router is impossible.')
             return False
+    
+    print('All the configurations have been pushed.')
 
 
 if __name__ == '__main__':

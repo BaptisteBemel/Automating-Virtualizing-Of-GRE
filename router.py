@@ -14,7 +14,9 @@ class Router:
         self.position = position
         self.mgmtPublicIP = ""
         self.insidePublicIP = ""
+        self.insideInterface = ""
         self.outsidePublicIP = ""
+        self.outsideInterface = ""
         self.operatingSystem = ""
         self.nextHop = ""
         self.mainRoute = ""
@@ -26,6 +28,10 @@ class Router:
         self.username = ""
         self.password = ""
         self.enable = ""
+        self.poolName = ""
+        self.startPool = ""
+        self.endPool = ""
+        self.networkNat = ""
         self.config = ""
 
     def get_mgmtPublicIP(self):
@@ -50,6 +56,16 @@ class Router:
             "Enter the inside public IP/mask of the " + self.position + " router: ")
         return self.insidePublicIP
 
+    def get_insideInterface(self):
+        """Asks the user about the inside interface for a specific router and saves the value.
+
+        Returns:
+            string: Inside interface entered by the user.
+        """
+        self.insideInterface = input(
+            "Enter the inside interface of the " + self.position + " router: ")
+        return self.insideInterface
+
     def get_OS(self):
         """Asks the user about the operating system for a specific router and saves the value.
 
@@ -71,6 +87,16 @@ class Router:
         self.outsidePublicIP = input(
             "Enter the outside public IP/mask of the " + self.position + " router: ")
         return self.outsidePublicIP
+
+    def get_outsideInterface(self):
+        """Asks the user about the outside interface for a specific router and saves the value.
+
+        Returns:
+            string: Outside interface entered by the user.
+        """
+        self.outsideInterface = input(
+            "Enter the outside interface of the " + self.position + " router: ")
+        return self.outsideInterface
 
     def get_nextHop(self):
         """Asks the user about the next hop for a specific router and saves the value.
@@ -115,6 +141,49 @@ class Router:
             "Enter the enable password of the " + self.position + " router: ")
         return self.enable
 
+    def get_poolName(self):
+        """Asks the user about the name of the pool for the NAT and saves the value.
+
+        Returns:
+            string: Name of the pool entered by the user.
+        """
+
+        self.poolName = input(
+            "Enter the name of the pool for the NAT: ")
+        return self.poolName
+
+    def get_startPool(self):
+        """Asks the user about the first IP address of the pool for the NAT and saves the value.
+
+        Returns:
+            string: First IP address of the pool entered by the user.
+        """
+
+        self.startPool = input(
+            "Enter the first IP address of the pool for the NAT (Without the subnet mask 'x.x.x.x'): ")
+        return self.startPool
+
+    def get_endPool(self):
+        """Asks the user about the last IP address of the pool for the NAT and saves the value.
+
+        Returns:
+            string: Last IP address of the pool entered by the user.
+        """
+
+        self.endPool = input(
+            "Enter the last IP address of the pool for the NAT (Without the subnet mask 'x.x.x.x'): ")
+        return self.endPool
+
+    def get_networkNat(self):
+        """Asks the user about the network/mask used for the NAT and saves the value.
+
+        Returns:
+            string: Network/mask for the NAT entered by the user.
+        """
+        self.networkNat = input(
+            "Enter the network address address of the pool for the NAT (With the subnet mask 'x.x.x.x/y'): ")
+        return self.endPool
+
     def print(self):
         """ Prints the configuration for a specific router
         """
@@ -126,6 +195,10 @@ class Router:
             self.mainGRERoute + "\nBack-up GRE route: " + self.backupGRERoute + \
             "\nMain tunnel: " + self.mainTunnel.name + "\nBack-up tunnel: " + self.backupTunnel.name + "\nUsername: " + \
             self.username + "\nPassword: " + self.password + \
-            "\nEnable password (field empty is the router is not running on cisco IOS): " + self.enable
+            "\nEnable password (field empty is the router is not running on cisco IOS or if it is not enabled): " + self.enable + \
+            "\nManagement IP: " + self.mgmtPublicIP + "\nInside interface: " + self.insideInterface + \
+            "\nOutside interface: " + self.outsideInterface + "\nPool name: " + self.poolName + \
+            "\nFirst IP address of the pool: " + self.startPool + "\nLast IP address of the pool: " + \
+            self.endPool + "\nNetwork for the NAT: " + self.networkNat + "\n"
 
         print(output)
