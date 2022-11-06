@@ -4,19 +4,19 @@ gre:
 192.168.51.37/24
 1
 2.2.2.2/24
-int int
+GigabitEthernet2
 7.7.7.1/24
-out int
+GigabitEthernet3
 baptiste
 GRE-Test
-yes
+no
 GRE-CONFIGS
 192.168.51.42/24
 2
 4.4.4.2/24
-int
+eth2
 6.6.6.1/24
-out
+eth1
 poolName
 15.15.15.15
 15.15.15.30
@@ -26,9 +26,9 @@ vyos
 192.168.51.45/24
 3
 3.3.3.2/24
-int
+ether3
 8.8.8.1/24
-out
+ether2
 admin
 GRE-Test
 192.168.51.38/24
@@ -80,9 +80,9 @@ gre+ipsec:
 192.168.51.37/24
 1
 2.2.2.2/24
-int int
+GigabitEthernet2
 7.7.7.1/24
-out int
+GigabitEthernet3
 baptiste
 GRE-Test
 no
@@ -90,9 +90,9 @@ GRE-CONFIGS
 192.168.51.42/24
 2
 4.4.4.2/24
-int
+eth2
 6.6.6.1/24
-out
+eth1
 poolName
 15.15.15.15
 15.15.15.30
@@ -102,9 +102,9 @@ vyos
 192.168.51.45/24
 3
 3.3.3.2/24
-int
+ether3
 8.8.8.1/24
-out
+ether2
 admin
 GRE-Test
 192.168.51.38/24

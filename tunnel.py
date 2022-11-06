@@ -37,11 +37,6 @@ class Tunnel:
         #VyOS values
         self.ikeName = ""
         self.espName = ""
-        #Cisco and VyOS
-        self.leftInsideInterface1 = ""
-        self.leftInsideInterface2 = ""
-        self.rightInsideInterface1 = ""
-        self.rightInsideInterface2 = ""
         #Mikrotik
         self.groupName = ""
 

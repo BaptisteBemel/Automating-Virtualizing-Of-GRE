@@ -188,7 +188,7 @@ class Router:
         """ Prints the configuration for a specific router
         """
 
-        output = "Configuration of the " + self.position + " router:\nInside public IP: " + \
+        output = "\nConfiguration of the " + self.position + " router:\nInside public IP: " + \
             self.insidePublicIP + "\nOutside public IP: " + self.outsidePublicIP + "\nOperating system: " + \
             self.operatingSystem + "\nNext hop: " + self.nextHop + "\nMain route: " + self.mainRoute + \
             "\nBack-up route: " + self.backupRoute + "\nMain GRE route: " + \
@@ -202,7 +202,7 @@ class Router:
         if self.position == "main right" or self.position == "back-up right":    
             natOutput = "\nPool name: " + self.poolName + "\nFirst IP address of the pool: " + \
                 self.startPool + "\nLast IP address of the pool: " + \
-                self.endPool + "\nNetwork for the NAT: " + self.networkNat + "\n"
+                self.endPool + "\nNetwork for the NAT: " + self.networkNat
 
             output += natOutput
 
@@ -212,11 +212,11 @@ class Router:
                 "\nSet name: " + self.mainTunnel.setName + "\nMap name: " + self.mainTunnel.mapName
 
             if self.operatingSystem == "2":
-                ipsecOutput = "\n\nIPsec Configuration:\nKey: " + self.mainTunnel.key + \
+                ipsecOutput = "\nKey: " + self.mainTunnel.key + \
                 "\nIKE name: " + self.mainTunnel.ikeName + "\nESP name: " + self.mainTunnel.espName
 
             if self.operatingSystem == "3":
-                ipsecOutput = "\n\nIPsec Configuration:\nKey: " + self.mainTunnel.key + \
+                ipsecOutput = "\nKey: " + self.mainTunnel.key + \
                 "\nGroup name: " + self.mainTunnel.groupName
                 
 

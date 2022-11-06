@@ -420,6 +420,17 @@ def main():
                     key = tunnels[turn].get_key()
                 if groupName == "":
                     groupName = tunnels[turn].get_groupName()
+        
+        for turn in range(4):
+            tunnels[turn].key = key
+            tunnels[turn].setName = setName
+            tunnels[turn].mapName = mapName
+            tunnels[turn].ikeName = ikeName
+            tunnels[turn].espName = espName
+            tunnels[turn].groupName = groupName
+
+
+            
 
 
 
@@ -441,7 +452,7 @@ def main():
     while True:
             again = False
   
-            confirm = input("Do you confirm the configurations ? ('yes'/'no'): ")
+            confirm = input("\nDo you confirm the configurations ? ('yes'/'no'): ")
 
             if confirm == "yes":
                 push_config(configs)
@@ -469,7 +480,7 @@ def main():
                 break
 
     
-    end = input("\nPress any key to quit.")
+    end = input("\nPress enter to quit.")
 
 def validate_IP(ipMask, isPrivate=False):
     """This function verifies if an entered IP address has the correct format. 
@@ -720,37 +731,29 @@ def get_config(routers, router, enableIpsec):
 
         #IPsec
         if enableIpsec:
-            interface1 = ""
-            interface2 = ""
-            if routers[selector].position == routers[selector].mainTunnel.leftRouter.position:
-                interface1 = routers[selector].mainTunnel.leftInsideInterface1
-                interface2 = routers[selector].mainTunnel.leftInsideInterface2
-            else:
-                interface1 = routers[selector].mainTunnel.rightInsideInterface1
-                interface2 = routers[selector].mainTunnel.rightInsideInterface2
             ipsecConfig = [
                 'exit', 'crypto iskmp policy 10', 'encryption aes 128',
                 'hash sha256', 'authentication pre-share', 'group 20',
                 'crypto isakmp key ' + routers[selector].mainTunnel.key + ' address ' + routers[otherRouter].insidePublicIP.split('/')[0],
-                'crypto ipsec transform-set ' + routers[selector].mainTunnel.setName + 'esp-aes esp-sha256-hmac',
+                'crypto ipsec transform-set ' + routers[selector].mainTunnel.setName + ' esp-aes esp-sha256-hmac',
                 'access-list 100 permit ip ' + get_network(routers[otherRouter].outsidePublicIP) + ' ' 
                 + get_full_mask(routers[otherRouter].outsidePublicIP.split('/')[1], True) 
                 + ' ' + get_network(routers[selector].outsidePublicIP) + ' ' + get_full_mask(routers[selector].outsidePublicIP.split('/')[1], True),
                 'crypto map ' + routers[selector].mainTunnel.mapName + ' 10 ipsec-isakmp',
                 'set peer ' + routers[otherRouter].insidePublicIP.split('/')[0],
                 'set transform-set ' + routers[selector].mainTunnel.setName,
-                'match address 100', 'interface ' + interface1, 'crypto map ' + routers[selector].mainTunnel.mapName,
+                'match address 100', 'interface ' + routers[selector].insideInterface, 'crypto map ' + routers[selector].mainTunnel.mapName,
                 'exit', 'crypto iskmp policy 10', 'encryption aes 128',
                 'hash sha256', 'authentication pre-share', 'group 20',
                 'crypto isakmp key ' + routers[selector].backupTunnel.key + ' address ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
-                'crypto ipsec transform-set ' + routers[selector].backupTunnel.setName + 'esp-aes esp-sha256-hmac',
+                'crypto ipsec transform-set ' + routers[selector].backupTunnel.setName + ' esp-aes esp-sha256-hmac',
                 'access-list 100 permit ip ' + get_network(routers[otherBackupRouter].outsidePublicIP) + ' ' 
                 + get_full_mask(routers[otherBackupRouter].outsidePublicIP.split('/')[1], True) 
                 + ' ' + get_network(routers[selector].outsidePublicIP) + ' ' + get_full_mask(routers[selector].outsidePublicIP.split('/')[1], True),
                 'crypto map ' + routers[selector].backupTunnel.mapName + ' 10 ipsec-isakmp',
                 'set peer ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
                 'set transform-set ' + routers[selector].backupTunnel.setName,
-                'match address 100', 'interface ' + interface2, 'crypto map ' + routers[selector].backupTunnel.mapName
+                'match address 100', 'interface ' + routers[selector].insideInterface, 'crypto map ' + routers[selector].backupTunnel.mapName
             ]
 
             config += ipsecConfig
@@ -789,17 +792,9 @@ def get_config(routers, router, enableIpsec):
 
         #IPsec
         if enableIpsec:
-            interface1 = ""
-            interface2 = ""
-            if routers[selector].position == routers[selector].mainTunnel.leftRouter.position:
-                interface1 = routers[selector].mainTunnel.leftInsideInterface1
-                interface2 = routers[selector].mainTunnel.leftInsideInterface2
-            else:
-                interface1 = routers[selector].mainTunnel.rightInsideInterface1
-                interface2 = routers[selector].mainTunnel.rightInsideInterface2
 
             ipsecConfig = [
-                'set vpn ipsec ipsec-interfaces interface ' + interface1,
+                'set vpn ipsec ipsec-interfaces interface ' + routers[selector].insideInterface,
                 'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 dh-group "20"',
                 'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 encryption "aes128"',
                 'set vpn ipsec ike-group ' + routers[selector].mainTunnel.ikeName + ' proposal 1 hash "sha256"',
@@ -811,7 +806,7 @@ def get_config(routers, router, enableIpsec):
                 'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' default-esp-group ' + routers[selector].mainTunnel.espName,
                 'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address ' + routers[selector].insidePublicIP.split('/')[0],
                 'set vpn ipsec site-to-site peer ' + routers[otherRouter].insidePublicIP.split('/')[0] + ' tunnel 1 protocol gre',
-                'set vpn ipsec ipsec-interfaces interface ' + interface2,
+                'set vpn ipsec ipsec-interfaces interface ' + routers[selector].insideInterface,
                 'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 dh-group "20"',
                 'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 encryption "aes128"',
                 'set vpn ipsec ike-group ' + routers[selector].backupTunnel.ikeName + ' proposal 1 hash "sha256"',
