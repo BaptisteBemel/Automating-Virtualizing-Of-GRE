@@ -66,7 +66,7 @@ class Tunnel:
             string: MTU entered by the user.
         """
 
-        self.mtu = input("Enter the maximum transmission unit (MTU) for the \'" + self.name + "\' tunnel(default value: 1476): ")
+        self.mtu = input("Enter the maximum transmission unit (MTU) for the \'tun" + self.name + "\' tunnel(default value: 1476): ")
         try:
             self.mss = str(int(self.mtu) - 40)
         except ValueError:
@@ -105,10 +105,10 @@ class Tunnel:
         """
 
         if selector == "left":
-            self.leftPrivateIP = input("Enter the private IP/mask of the left router for \'" + self.name + "\' : ")
+            self.leftPrivateIP = input("Enter the private IP/mask of the left router for \'tun" + self.name + "\' : ")
             return self.leftPrivateIP
         else:
-            self.rightPrivateIP = input("Enter the private IP/mask of the right router for \'" + self.name + "\' : ")
+            self.rightPrivateIP = input("Enter the private IP/mask of the right router for \'tun" + self.name + "\' : ")
             return self.rightPrivateIP
 
     def get_key(self):

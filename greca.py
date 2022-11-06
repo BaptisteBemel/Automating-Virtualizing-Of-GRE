@@ -1,7 +1,6 @@
 # Baptiste Bemelmans - GRECA: Generic Routing Encapsulation Configuration Assistant - For SatADSL
 from posixpath import split
 import re
-from this import s
 import netmiko
 import subprocess
 from router import Router
@@ -19,6 +18,8 @@ def main():
 
     routers = [router1, router2, router3, router4]
 
+    print('GRE Configuration Assistant \n\n')
+
     for turn in range(4):
         #Management IP of the routers
         while True:
@@ -27,15 +28,15 @@ def main():
             mgmtIPMask = routers[turn].get_mgmtPublicIP()
 
             #Validate the format of the management IP
-            again = validate_IP(mgmtIPMask)
+            #again = validate_IP(mgmtIPMask)
 
             if mgmtIPMask in allIP:
                 print('This IP has already been entered.') 
                 again = True
 
             if not again:
+                #again = ping(mgmtIPMask)
                 pass
-                again = ping(mgmtIPMask)
 
             if not again:
                 allIP.append(mgmtIPMask)
@@ -60,15 +61,11 @@ def main():
             publicIPMask = routers[turn].get_insidePublicIP()
 
             #Validate the format of the public IP
-            again = validate_IP(publicIPMask)
+            #again = validate_IP(publicIPMask)
 
             if publicIPMask in allIP:
                 print('This IP has already been entered.') 
                 again = True
-
-            if not again:
-                pass
-                again = ping(publicIPMask)
 
             if not again:
                 allIP.append(publicIPMask)
@@ -97,7 +94,7 @@ def main():
             outsidePublicIP = routers[turn].get_outsidePublicIP() 
 
             #Validate the format of the public IP
-            again = validate_IP(outsidePublicIP)
+            #again = validate_IP(outsidePublicIP)
 
             if outsidePublicIP in allIP:
                 print('This IP has already been entered.') 
@@ -146,7 +143,8 @@ def main():
                     again = True
 
                 if not again:
-                    again = validate_IP(startPool, True)
+                    #again = validate_IP(startPool, True)
+                    pass
 
                 if not again:
                     break
@@ -163,7 +161,8 @@ def main():
                     again = True
 
                 if not again:
-                    again = validate_IP(endPool, True)
+                    #again = validate_IP(endPool, True)
+                    pass
 
                 if not again:
                     break
@@ -243,7 +242,7 @@ def main():
                 
             nextHop = routers[turn].get_nextHop()
 
-            again = validate_IP(nextHop)
+            #again = validate_IP(nextHop)
 
             if nextHop in allIP :
                 print('This IP has already been entered.') 
@@ -364,7 +363,7 @@ def main():
                     privateIPMask = tunnels[turn].get_privateIP('right')
 
                 #Validate the format of the private
-                again = validate_IP(privateIPMask, True)
+                #again = validate_IP(privateIPMask, True)
 
                 if privateIPMask in privateIPs or privateIPMask in allIP:
                     print('This private IP has already been entered.') 
@@ -393,35 +392,35 @@ def main():
     
     #Collects information for IPsec if it's enabled
     if enableIpsec:
+        key = ""
+        setName = ""
+        mapName = ""
+        ikeName = ""
+        espName = ""
+        groupName = ""
         for turn in range(4):
-            key = ""
-            if tunnels[turn].leftRouter.operatingSystem == "1":
-                tunnels[turn].get_key()
-                tunnels[turn].get_setName()
-                tunnels[turn].get_mapName()
-
-
-            elif tunnels[turn].rightRouter.operatingSystem == "1" and tunnels[turn].leftRouter.operatingSystem != "1":
-                tunnels[turn].get_key()
-                tunnels[turn].get_setName()
-                tunnels[turn].get_mapName()
-
-            elif tunnels[turn].leftRouter.operatingSystem == "2":
+            if tunnels[turn].leftRouter.operatingSystem == "1" or tunnels[turn].rightRouter.operatingSystem == "1":
                 if key == "":
-                    tunnels[turn].get_key()
-                tunnels[turn].get_ikeName()
-                tunnels[turn].get_espName()
+                    key = tunnels[turn].get_key()
+                if setName == "":
+                    setName = tunnels[turn].get_setName()
+                if mapName == "":
+                    mapName = tunnels[turn].get_mapName()
 
-            elif tunnels[turn].rightRouter.operatingSystem == "2" and tunnels[turn].leftRouter.operatingSystem != "2":
+            if tunnels[turn].leftRouter.operatingSystem == "2" or tunnels[turn].rightRouter.operatingSystem == "2":
                 if key == "":
-                    tunnels[turn].get_key()
-                tunnels[turn].get_setName()
-                tunnels[turn].get_mapName()
+                    key = tunnels[turn].get_key()
+                if ikeName == "":
+                    ikeName = tunnels[turn].get_ikeName()
+                if espName == "":
+                    espName = tunnels[turn].get_espName()
 
-            elif tunnels[turn].leftRouter.operatingSystem == "3" or tunnels[turn].rightRouter.operatingSystem == "3":
+            if tunnels[turn].leftRouter.operatingSystem == "3" or tunnels[turn].rightRouter.operatingSystem == "3":
                 if key == "":
-                    tunnels[turn].get_key()
-                tunnels[turn].get_groupName()
+                    key = tunnels[turn].get_key()
+                if groupName == "":
+                    groupName = tunnels[turn].get_groupName()
+
 
 
 
@@ -453,14 +452,14 @@ def main():
 
                     if sure == "yes":
                         print("The configuration has been cancelled.")
-                        pass
                     elif sure == "no":
                         again = True
                     else:
                         sureAgain = True
 
-                    if not sureAgain:
+                    if sureAgain:
                         print("Please enter 'yes' or 'no'")
+                    else:
                         break
             else:
                 print("Please enter 'yes' or 'no'")
@@ -469,7 +468,8 @@ def main():
             if not again:
                 break
 
-
+    
+    end = input("\nPress any key to quit.")
 
 def validate_IP(ipMask, isPrivate=False):
     """This function verifies if an entered IP address has the correct format. 
@@ -720,6 +720,14 @@ def get_config(routers, router, enableIpsec):
 
         #IPsec
         if enableIpsec:
+            interface1 = ""
+            interface2 = ""
+            if routers[selector].position == routers[selector].mainTunnel.leftRouter.position:
+                interface1 = routers[selector].mainTunnel.leftInsideInterface1
+                interface2 = routers[selector].mainTunnel.leftInsideInterface2
+            else:
+                interface1 = routers[selector].mainTunnel.rightInsideInterface1
+                interface2 = routers[selector].mainTunnel.rightInsideInterface2
             ipsecConfig = [
                 'exit', 'crypto iskmp policy 10', 'encryption aes 128',
                 'hash sha256', 'authentication pre-share', 'group 20',
