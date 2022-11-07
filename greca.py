@@ -28,15 +28,14 @@ def main():
             mgmtIPMask = routers[turn].get_mgmtPublicIP()
 
             #Validate the format of the management IP
-            #again = validate_IP(mgmtIPMask)
+            again = validate_IP(mgmtIPMask)
 
             if mgmtIPMask in allIP:
                 print('This IP has already been entered.') 
                 again = True
 
             if not again:
-                #again = ping(mgmtIPMask)
-                pass
+                again = ping(mgmtIPMask)
 
             if not again:
                 allIP.append(mgmtIPMask)
@@ -61,7 +60,7 @@ def main():
             publicIPMask = routers[turn].get_insidePublicIP()
 
             #Validate the format of the public IP
-            #again = validate_IP(publicIPMask)
+            again = validate_IP(publicIPMask)
 
             if publicIPMask in allIP:
                 print('This IP has already been entered.') 
@@ -94,7 +93,7 @@ def main():
             outsidePublicIP = routers[turn].get_outsidePublicIP() 
 
             #Validate the format of the public IP
-            #again = validate_IP(outsidePublicIP)
+            again = validate_IP(outsidePublicIP)
 
             if outsidePublicIP in allIP:
                 print('This IP has already been entered.') 
@@ -143,8 +142,8 @@ def main():
                     again = True
 
                 if not again:
-                    #again = validate_IP(startPool, True)
-                    pass
+                    again = validate_IP(startPool, True)
+
 
                 if not again:
                     break
@@ -161,8 +160,8 @@ def main():
                     again = True
 
                 if not again:
-                    #again = validate_IP(endPool, True)
-                    pass
+                    again = validate_IP(endPool, True)
+
 
                 if not again:
                     break
@@ -242,7 +241,7 @@ def main():
                 
             nextHop = routers[turn].get_nextHop()
 
-            #again = validate_IP(nextHop)
+            again = validate_IP(nextHop)
 
             if nextHop in allIP :
                 print('This IP has already been entered.') 
@@ -363,7 +362,7 @@ def main():
                     privateIPMask = tunnels[turn].get_privateIP('right')
 
                 #Validate the format of the private
-                #again = validate_IP(privateIPMask, True)
+                again = validate_IP(privateIPMask, True)
 
                 if privateIPMask in privateIPs or privateIPMask in allIP:
                     print('This private IP has already been entered.') 
