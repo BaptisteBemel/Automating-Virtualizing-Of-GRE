@@ -1,0 +1,28 @@
+
+create crypto group:
+
+ikev1 keepalive dpd interval dur timeout dur num-retry retries
+crypto-group group_name
+match address acl_name [ preference ]
+match ip pool pool-name pool_name
+switchover auto
+
+
+
+
+
+isakmp crypto map config to match a crypto group:
+
+crypto map map_name1 ipsec-isakmp
+match crypto-group group_name primary
+
+crypto map map_name2 ipsec-isakmp
+match crypto-group group_name secondary
+
+
+
+
+
+dpd:
+
+ikev1 keepalive dpd interval dur timeout dur num-retry retries

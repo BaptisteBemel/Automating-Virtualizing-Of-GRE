@@ -620,15 +620,24 @@ def add_route(targetIPMask, mainLeftOS, nextHop, distance='0'):
 
     #CSR
     if mainLeftOS == '1':
-        new_route = 'ip route ' + targetNetwork + ' ' + targetMask + ' ' + nextHop.split('/')[0] + ' ' + distance
+        if distance != '0':
+            new_route = 'ip route ' + targetNetwork + ' ' + targetMask + ' ' + nextHop.split('/')[0] + ' ' + distance
+        else:
+             new_route = 'ip route ' + targetNetwork + ' ' + targetMask + ' ' + nextHop.split('/')[0]
 
     #VyOS
     elif mainLeftOS == '2':
-        new_route = 'set protocols static route ' + targetNetworkMask + ' next-hop ' + nextHop + ' distance \'' + distance + '\''
+        if distance != '0':
+            new_route = 'set protocols static route ' + targetNetworkMask + ' next-hop ' + nextHop.split('/')[0] + ' distance \'' + distance + '\''
+        else:
+            new_route = 'set protocols static route ' + targetNetworkMask + ' next-hop ' + nextHop.split('/')[0]
 
     #Mikrotik
     elif mainLeftOS == '3':
-        new_route = 'ip route add dst-address=' + targetNetworkMask + ' gateway=' + nextHop + ' distance=' + distance
+        if distance != '0':
+            new_route = 'ip route add dst-address=' + targetNetworkMask + ' gateway=' + nextHop.split('/')[0] + ' distance=' + distance
+        else:
+            new_route = 'ip route add dst-address=' + targetNetworkMask + ' gateway=' + nextHop.split('/')[0]
     
     return new_route
 
@@ -705,25 +714,35 @@ def get_config(routers, router, enableIpsec):
             'ip tcp adjust-mss ' +  routers[selector].mainTunnel.mss,
             'ip address ' + mainPrivateIP.split('/')[0] + ' 255.255.255.252',
             'tunnel source ' + routers[selector].insidePublicIP.split('/')[0], 
-            'tunnel destination ' + routers[otherRouter].insidePublicIP.split('/')[0],
-            'keepalive ' + routers[selector].mainTunnel.keepAlive, 
+            'tunnel destination ' + routers[otherRouter].insidePublicIP.split('/')[0]]
+
+        if routers[selector].mainTunnel.leftRouter.operatingSystem != 2 and routers[selector].mainTunnel.rightRouter.operatingSystem != 2:
+            config.append('keepalive ' + routers[selector].mainTunnel.keepAlive)
+
+        configSuite= [     
             'interface tunnel ' + routers[selector].backupTunnel.name,
             'ip mtu ' +  routers[selector].backupTunnel.mtu, 
             'ip tcp adjust-mss ' +  routers[selector].backupTunnel.mss,
             'ip address ' + backupPrivateIP.split('/')[0] + ' 255.255.255.252',
             'tunnel source ' + routers[selector].insidePublicIP.split('/')[0], 
-            'tunnel destination ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
-            'keepalive ' + routers[selector].backupTunnel.keepAlive
+            'tunnel destination ' + routers[otherBackupRouter].insidePublicIP.split('/')[0]
             ]
+
+        config += configSuite
+
+        if routers[selector].backupTunnel.leftRouter.operatingSystem != 2 and routers[selector].backupTunnel.rightRouter.operatingSystem != 2:
+            config.append('keepalive ' + routers[selector].backupTunnel.keepAlive)
+
+        config.append('exit')
 
         #NAT
         if routers[selector].position == routers[selector].mainTunnel.rightRouter.position:
             natConfig = [
                 'interface ' + routers[selector].outsideInterface,
-                'ip nat inside', 'exit' , 'interface ' + routers[selector].insideInterface,
-                'ip nat outside', 'exit',
+                'ip nat outside', 'exit' , 'interface ' + routers[selector].insideInterface,
+                'ip nat inside', 'exit',
                 'access-list 1 permit ' + routers[selector].networkNat.split('/')[0] + ' ' + get_full_mask(routers[selector].networkNat.split('/')[1], True),
-                'ip nat pool ' + routers[selector].poolName + ' ' + routers[selector].startPool + ' ' + routers[selector].endPool,
+                'ip nat pool ' + routers[selector].poolName + ' ' + routers[selector].startPool + ' ' + routers[selector].endPool + ' netmask ' + get_full_mask(routers[selector].networkNat.split('/')[1], False),
                 'ip nat inside source list 1 pool ' + routers[selector].poolName
             ]
 
@@ -732,7 +751,7 @@ def get_config(routers, router, enableIpsec):
         #IPsec
         if enableIpsec:
             ipsecConfig = [
-                'exit', 'crypto iskmp policy 10', 'encryption aes 128',
+                'crypto isakmp policy 10', 'encryption aes 128',
                 'hash sha256', 'authentication pre-share', 'group 20',
                 'crypto isakmp key ' + routers[selector].mainTunnel.key + ' address ' + routers[otherRouter].insidePublicIP.split('/')[0],
                 'crypto ipsec transform-set ' + routers[selector].mainTunnel.setName + ' esp-aes esp-sha256-hmac',
@@ -743,7 +762,7 @@ def get_config(routers, router, enableIpsec):
                 'set peer ' + routers[otherRouter].insidePublicIP.split('/')[0],
                 'set transform-set ' + routers[selector].mainTunnel.setName,
                 'match address 100', 'interface ' + routers[selector].insideInterface, 'crypto map ' + routers[selector].mainTunnel.mapName,
-                'exit', 'crypto iskmp policy 10', 'encryption aes 128',
+                'exit', 'crypto isakmp policy 10', 'encryption aes 128',
                 'hash sha256', 'authentication pre-share', 'group 20',
                 'crypto isakmp key ' + routers[selector].backupTunnel.key + ' address ' + routers[otherBackupRouter].insidePublicIP.split('/')[0],
                 'crypto ipsec transform-set ' + routers[selector].backupTunnel.setName + ' esp-aes esp-sha256-hmac',
@@ -830,15 +849,32 @@ def get_config(routers, router, enableIpsec):
         config = [
             routers[selector].mainRoute, routers[selector].backupRoute,
             routers[selector].mainGRERoute, routers[selector].backupGRERoute,
-            '/interface gre add name=' + routers[selector].mainTunnel.name + ' remote-address=' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
-            '/interface gre set name=' + routers[selector].mainTunnel.name + ' mtu=' + routers[selector].mainTunnel.mtu,
+            '/interface gre add name=' + routers[selector].mainTunnel.name + ' remote-address=' + routers[otherRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0] + \
+                ' mtu=' + routers[selector].mainTunnel.mtu
+                ]
+                
+        if routers[selector].mainTunnel.leftRouter.operatingSystem != 2 and routers[selector].main.rightRouter.operatingSystem != 2:
+            config.append('/interface gre set name=' + routers[selector].mainTunnel.name + ' keepalive=' + routers[selector].mainTunnel.keepAliveFrequency + 's,' + routers[selector].mainTunnel.keepAliveRetries)
+        
+
+        configSuite = [
             '/ip firewall mangle add out-interface=' + routers[selector].mainTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].mainTunnel.mss + ' chain=forward tcp-mss=' + str(int(routers[selector].mainTunnel.mss) + 1)  + '-65535',
             '/ip address  add address=' + mainPrivateIP + ' interface=' + routers[selector].mainTunnel.name,
-            '/interface gre add name=' + routers[selector].backupTunnel.name + ' remote-address=' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0],
-            '/interface gre set name=' + routers[selector].backupTunnel.name + ' mtu=' + routers[selector].backupTunnel.mtu,
+            '/interface gre add name=' + routers[selector].backupTunnel.name + ' remote-address=' + routers[otherBackupRouter].insidePublicIP.split('/')[0] + ' local-address=' + routers[selector].insidePublicIP.split('/')[0] + \
+                ' mtu=' + routers[selector].backupTunnel.mtu
+                ]
+
+        config += configSuite
+
+        if routers[selector].backupTunnel.leftRouter.operatingSystem != 2 and routers[selector].backupTunnel.rightRouter.operatingSystem != 2:
+            config.append('/interface gre set name=' + routers[selector].backupTunnel.name + ' keepalive=' + routers[selector].backupTunnel.keepAliveFrequency + 's,' + routers[selector].backupTunnel.keepAliveRetries)
+
+        configSuite = [      
             '/ip firewall mangle add out-interface=' + routers[selector].backupTunnel.name + ' protocol=tcp tcp-flags=syn action=change-mss new-mss=' + routers[selector].backupTunnel.mss + ' chain=forward tcp-mss=' + str(int(routers[selector].backupTunnel.mss) + 1) +'-65535',
             '/ip address  add address=' + backupPrivateIP + ' interface=' + routers[selector].backupTunnel.name
         ]
+
+        config += configSuite
 
         #NAT
         if routers[selector].position == routers[selector].mainTunnel.rightRouter.position:

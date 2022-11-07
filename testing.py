@@ -218,10 +218,6 @@ class TestGreca(unittest.TestCase):
         self.assertEqual(get_network('192.168.1.10/30'), '192.168.1.8')
         self.assertEqual(get_network('192.168.1.8/30'), '192.168.1.8')
 
-    #Informations about the routers shall be correct
-    def test_push_config(self):
-        pass
-
 
 if __name__ == '__main__':
     unittest.main()

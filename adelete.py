@@ -9,7 +9,7 @@ GigabitEthernet2
 GigabitEthernet3
 baptiste
 GRE-Test
-no
+yes
 GRE-CONFIGS
 192.168.51.42/24
 2
@@ -85,7 +85,7 @@ GigabitEthernet2
 GigabitEthernet3
 baptiste
 GRE-Test
-no
+yes
 GRE-CONFIGS
 192.168.51.42/24
 2
