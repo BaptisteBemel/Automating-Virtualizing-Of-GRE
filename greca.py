@@ -28,14 +28,15 @@ def main():
             mgmtIPMask = routers[turn].get_mgmtPublicIP()
 
             #Validate the format of the management IP
-            again = validate_IP(mgmtIPMask)
+            #again = validate_IP(mgmtIPMask)
 
             if mgmtIPMask in allIP:
                 print('This IP has already been entered.') 
                 again = True
 
             if not again:
-                again = ping(mgmtIPMask)
+                #again = ping(mgmtIPMask)
+                pass
 
             if not again:
                 allIP.append(mgmtIPMask)
@@ -142,7 +143,8 @@ def main():
                     again = True
 
                 if not again:
-                    again = validate_IP(startPool, True)
+                    #again = validate_IP(startPool, True)
+                    pass
 
 
                 if not again:
@@ -160,7 +162,8 @@ def main():
                     again = True
 
                 if not again:
-                    again = validate_IP(endPool, True)
+                    #again = validate_IP(endPool, True)
+                    pass
 
 
                 if not again:
@@ -717,6 +720,8 @@ def get_config(routers, router, enableIpsec):
 
         if routers[selector].mainTunnel.leftRouter.operatingSystem != 2 and routers[selector].mainTunnel.rightRouter.operatingSystem != 2:
             config.append('keepalive ' + routers[selector].mainTunnel.keepAlive)
+        else:
+            config.append('no keepalive')
 
         configSuite= [     
             'interface tunnel ' + routers[selector].backupTunnel.name,
@@ -729,7 +734,7 @@ def get_config(routers, router, enableIpsec):
 
         config += configSuite
 
-        if routers[selector].backupTunnel.leftRouter.operatingSystem != 2 and routers[selector].backupTunnel.rightRouter.operatingSystem != 2:
+        if routers[selector].backupTunnel.leftRouter.operatingSystem != '2' and routers[selector].backupTunnel.rightRouter.operatingSystem != '2':
             config.append('keepalive ' + routers[selector].backupTunnel.keepAlive)
 
         config.append('exit')
@@ -852,7 +857,7 @@ def get_config(routers, router, enableIpsec):
                 ' mtu=' + routers[selector].mainTunnel.mtu
                 ]
                 
-        if routers[selector].mainTunnel.leftRouter.operatingSystem != 2 and routers[selector].main.rightRouter.operatingSystem != 2:
+        if routers[selector].mainTunnel.leftRouter.operatingSystem != '2' and routers[selector].mainTunnel.rightRouter.operatingSystem != '2':
             config.append('/interface gre set name=' + routers[selector].mainTunnel.name + ' keepalive=' + routers[selector].mainTunnel.keepAliveFrequency + 's,' + routers[selector].mainTunnel.keepAliveRetries)
         
 
@@ -865,7 +870,7 @@ def get_config(routers, router, enableIpsec):
 
         config += configSuite
 
-        if routers[selector].backupTunnel.leftRouter.operatingSystem != 2 and routers[selector].backupTunnel.rightRouter.operatingSystem != 2:
+        if routers[selector].backupTunnel.leftRouter.operatingSystem != '2' and routers[selector].backupTunnel.rightRouter.operatingSystem != '2':
             config.append('/interface gre set name=' + routers[selector].backupTunnel.name + ' keepalive=' + routers[selector].backupTunnel.keepAliveFrequency + 's,' + routers[selector].backupTunnel.keepAliveRetries)
 
         configSuite = [      
