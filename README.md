@@ -7,16 +7,16 @@ This project has been for the company SatADSL and for my graduation work at EPHE
 For the correct operation of this application it is necessary to have installed, on the computer where the application will be used, Python with a version of at least 3.7 and the following Python libraries: "netmiko", "subprocess", "re", and "posixpath". 
 
 Linux:
-(sudo) apt-get install python3
-(sudo) apt install python3-pip
-pip install netmiko
-pip install regex
+´(sudo) apt-get install python3´
+´(sudo) apt install python3-pip´
+´pip install netmiko´
+´pip install regex´
 
 The "subprocess" and "posixpath" libraries should be installed with Python.
 
 The ping tool should also be installed. If this is not the case:
 
-(sudo) apt install iputils-ping
+´(sudo) apt install iputils-ping´
 
 Moreover, it is necessary that all interfaces of routers, gateways and end devices are configured beforehand. The routers on which the configurations will be applied and the end devices must be reachable by the computer on which the software is used.
 
