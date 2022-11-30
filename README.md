@@ -8,8 +8,14 @@ For the correct operation of this application it is necessary to have installed,
 
 Linux:
 `(sudo) apt-get install python3`
+
+
 `(sudo) apt install python3-pip`
+
+
 `pip install netmiko`
+
+
 `pip install regex`
 
 The "subprocess" and "posixpath" libraries should be installed with Python.
@@ -20,13 +26,15 @@ The ping tool should also be installed. If this is not the case:
 
 Moreover, it is necessary that all interfaces of routers, gateways and end devices are configured beforehand. The routers on which the configurations will be applied and the end devices must be reachable by the computer on which the software is used.
 
-It is assumed that the operating system of the computer on which the script is used is "Debian 10". If the program is used on a device with "Windows" operating system, the script must have the authorization to perform the "ping -c" command, which may require certain rights.
+It is assumed that the operating system of the computer on which the script is used is "Debian 10". If the program is used on a device with "Windows" operating system, the script must have the authorization to perform the `ping -c` command, which may require certain rights.
 
 To install the project:
 git clone https://github.com/BaptisteBemel/Automating-Virtualizing-Of-GRE.git
 
 Once the project is installed, go to the project directory and execute the file "greca.py" with the following command:
-python3 .\greca.py
+
+
+`python3 .\greca.py`
 
 ## Documentation
 
